@@ -1,4 +1,4 @@
-<!doctype html><html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Registration • TOP100</title><link rel="stylesheet" href="styles.css"></head><body><header class="topbar"><div class="inner"><a class="brand" href="index.html">TOP100 CHARITY RUN</a><select class="lang-select" data-lang-select><option value="th">🇹🇭 ไทย</option><option value="en">🇬🇧 English</option><option value="zh">🇨🇳 中文</option><option value="ru">🇷🇺 Русский</option></select></div></header><main class="container"><section class="panel"><div class="panel-head"><h1 data-i18n="form">ฟอร์มสมัคร</h1><p id="subtitle"></p></div><div class="panel-body"><div id="message"></div><form id="form" novalidate><section class="form-section"><h3 data-i18n="category">ประเภทการแข่งขัน</h3><div class="choice" id="categories"></div></section><section class="form-section"><h3 data-i18n="applicant">ข้อมูลผู้สมัคร</h3><div class="form-grid"><div class="field"><label data-i18n="docType">ประเภทเอกสาร</label><select id="documentType"><option value="thai_id" data-i18n="thaiId">บัตรประชาชนไทย</option><option value="passport" data-i18n="passport">Passport</option></select></div><div class="field"><label id="documentLabel" data-i18n="thaiId">บัตรประชาชนไทย</label><input id="documentNo" autocomplete="off" maxlength="13" inputmode="numeric" required><small class="muted" id="documentHint"></small></div><div class="field"><label data-i18n="first">ชื่อ</label><input id="firstName" required></div><div class="field"><label data-i18n="last">นามสกุล</label><input id="lastName" required></div><div class="field"><label data-i18n="dob">วันเกิด</label><input id="birthDate" type="date" required></div><div class="field"><label data-i18n="phone">เบอร์โทรศัพท์</label><input id="phone" type="tel" required></div><div class="field full"><label data-i18n="email">อีเมล</label><input id="email" type="email"></div></div><div id="dynamicFields" class="form-grid" style="margin-top:12px"></div></section><section class="form-section"><h3 data-i18n="slip">สลิปการชำระเงิน</h3><div class="upload"><input type="file" id="slip" accept=".jpg,.jpeg,.png,image/jpeg,image/png" required><p class="muted" id="slipHelp"></p><button type="button" class="btn btn-dark" id="verify" data-i18n="verifySlip">ตรวจสอบสลิป</button></div><div id="slipStatus" style="margin-top:10px"></div></section><label class="check"><input type="checkbox" id="terms" required><span data-i18n="terms">ยืนยันว่าข้อมูลถูกต้องและยอมรับเงื่อนไข</span></label><button class="btn btn-primary" type="submit" style="width:100%;margin-top:14px" data-i18n="submit">ยืนยันการสมัคร</button></form></div></section></main><script src="https://cdn.jsdelivr.net/npm/tesseract.js@7.0.0/dist/tesseract.min.js"></script><script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="config.js"></script><script src="js/app.js"></script><script src="js/i18n.js"></script><script>
+<!doctype html><html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Registration • TOP100</title><link rel="stylesheet" href="styles.css"></head><body><header class="topbar"><div class="inner"><a class="brand" href="index.html">TOP100 CHARITY RUN</a><select class="lang-select" data-lang-select><option value="th">🇹🇭 ไทย</option><option value="en">🇬🇧 English</option><option value="zh">🇨🇳 中文</option><option value="ru">🇷🇺 Русский</option></select></div></header><main class="container"><section class="panel"><div class="panel-head"><h1 data-i18n="form">ฟอร์มสมัคร</h1><p id="subtitle"></p></div><div class="panel-body"><div id="message"></div><form id="form" novalidate><section class="form-section"><h3 data-i18n="category">ประเภทการแข่งขัน</h3><div class="choice" id="categories"></div></section><section class="form-section"><h3 data-i18n="applicant">ข้อมูลผู้สมัคร</h3><div class="form-grid"><div class="field"><label data-i18n="docType">ประเภทเอกสาร</label><select id="documentType"><option value="thai_id" data-i18n="thaiId">บัตรประชาชนไทย</option><option value="passport" data-i18n="passport">Passport</option></select></div><div class="field"><label id="documentLabel" data-i18n="thaiId">บัตรประชาชนไทย</label><input id="documentNo" autocomplete="off" maxlength="13" inputmode="numeric" required><small class="muted" id="documentHint"></small></div><div class="field"><label data-i18n="first">ชื่อ</label><input id="firstName" required></div><div class="field"><label data-i18n="last">นามสกุล</label><input id="lastName" required></div><div class="field"><label data-i18n="dob">วันเกิด</label><input id="birthDate" type="date" required></div><div class="field"><label data-i18n="phone">เบอร์โทรศัพท์</label><input id="phone" type="tel" required></div><div class="field full"><label data-i18n="email">อีเมล</label><input id="email" type="email"></div></div><div id="dynamicFields" class="form-grid" style="margin-top:12px"></div></section><section class="form-section"><h3 data-i18n="slip">สลิปการชำระเงิน</h3><div class="upload"><input type="file" id="slip" accept=".jpg,.jpeg,.png,image/jpeg,image/png" required><p class="muted" id="slipHelp"></p><button type="button" class="btn btn-dark" id="verify" data-i18n="verifySlip">ตรวจสอบสลิป</button></div><div id="slipStatus" style="margin-top:10px"></div></section><label class="check"><input type="checkbox" id="terms" required><span data-i18n="terms">ยืนยันว่าข้อมูลถูกต้องและยอมรับเงื่อนไข</span></label><button class="btn btn-primary" id="submitRegistration" type="submit" style="width:100%;margin-top:14px" data-i18n="submit">ยืนยันการสมัคร</button></form></div></section></main><script src="https://cdn.jsdelivr.net/npm/tesseract.js@7.0.0/dist/tesseract.min.js"></script><script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script><script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="config.js"></script><script src="js/app.js"></script><script src="js/i18n.js"></script><script>
 let eventData,cats=[],fields=[],selectedCategory=null,verificationToken=null;const el=s=>document.querySelector(s),msg=el('#message');
 function thaiIdValid(v){v=String(v).replace(/\D/g,'');if(!/^\d{13}$/.test(v)||/^(\d)\1{12}$/.test(v))return false;let sum=0;for(let i=0;i<12;i++)sum+=Number(v[i])*(13-i);return(11-(sum%11))%10===Number(v[12])}
 function passportValid(v){v=String(v).trim().toUpperCase();return /^[A-Z0-9]{6,12}$/.test(v)&&/[A-Z]/.test(v)&&/\d/.test(v)&&!(/^(.)\1+$/.test(v))}
@@ -253,4 +253,94 @@ el('#verify').onclick=async()=>{
     el('#slipStatus').innerHTML=`<div class="error">${APP.esc(e.message)}</div>`;
   }
 };
-el('#form').onsubmit=async ev=>{ev.preventDefault();msg.innerHTML='';if(!selectedCategory||!validateDoc()||!el('#terms').checked){msg.innerHTML=`<div class="error">${I18N.t('required')}</div>`;return}if(!verificationToken){msg.innerHTML=`<div class="error">${I18N.t('slipRequired')}</div>`;return}const extra={};document.querySelectorAll('[data-dynamic]').forEach(x=>extra[x.dataset.dynamic]=x.value);const body={event_slug:APP.eventSlug,category_id:selectedCategory,document_type:el('#documentType').value,document_no:el('#documentNo').value.trim(),first_name:el('#firstName').value.trim(),last_name:el('#lastName').value.trim(),birth_date:el('#birthDate').value,phone:el('#phone').value.trim(),email:el('#email').value.trim(),accept_terms:true,verification_token:verificationToken,extra_data:extra,language:I18N.lang};msg.innerHTML=`<div class="notice">${I18N.t('waiting')}</div>`;try{const data=await APP.invoke('register-runner',body);if(!data?.ok)throw new Error(data?.message||'Register failed');location.href=`success.html?token=${encodeURIComponent(data.status_token)}`}catch(e){msg.innerHTML=`<div class="error">${APP.esc(e.message)}</div>`}};init();</script></body></html>
+let isSubmitting=false;
+
+el('#form').onsubmit=async ev=>{
+  ev.preventDefault();
+
+  if(isSubmitting)return;
+
+  msg.innerHTML='';
+
+  if(!selectedCategory||!validateDoc()||!el('#terms').checked){
+    msg.innerHTML=`<div class="error">${I18N.t('required')}</div>`;
+    return;
+  }
+
+  if(!verificationToken){
+    msg.innerHTML=`<div class="error">${I18N.t('slipRequired')}</div>`;
+    return;
+  }
+
+  const submitBtn=el('#submitRegistration');
+  const originalSubmitText=submitBtn.textContent;
+
+  const extra={};
+  document.querySelectorAll('[data-dynamic]').forEach(x=>extra[x.dataset.dynamic]=x.value);
+
+  const body={
+    event_slug:APP.eventSlug,
+    category_id:selectedCategory,
+    document_type:el('#documentType').value,
+    document_no:el('#documentNo').value.trim(),
+    first_name:el('#firstName').value.trim(),
+    last_name:el('#lastName').value.trim(),
+    birth_date:el('#birthDate').value,
+    phone:el('#phone').value.trim(),
+    email:el('#email').value.trim(),
+    accept_terms:true,
+    verification_token:verificationToken,
+    extra_data:extra,
+    language:I18N.lang
+  };
+
+  isSubmitting=true;
+  submitBtn.disabled=true;
+  submitBtn.setAttribute('aria-busy','true');
+  submitBtn.textContent=I18N.t('waiting');
+
+  Swal.fire({
+    title:I18N.t('savingTitle'),
+    text:I18N.t('savingHint'),
+    allowOutsideClick:false,
+    allowEscapeKey:false,
+    showConfirmButton:false,
+    didOpen:()=>Swal.showLoading()
+  });
+
+  try{
+    const data=await APP.invoke('register-runner',body);
+
+    if(!data?.ok){
+      throw new Error(data?.message||'Register failed');
+    }
+
+    await Swal.fire({
+      icon:'success',
+      title:I18N.t('approvalTitle'),
+      html:`<div style="line-height:1.65">${APP.esc(I18N.t('approvalMessage'))}<br><small style="color:#64748b">${APP.esc(I18N.t('approvalHint'))}</small></div>`,
+      confirmButtonText:I18N.t('ok'),
+      allowOutsideClick:false,
+      allowEscapeKey:false
+    });
+
+    location.href=`success.html?token=${encodeURIComponent(data.status_token)}`;
+  }catch(e){
+    Swal.close();
+    msg.innerHTML=`<div class="error">${APP.esc(e.message)}</div>`;
+
+    await Swal.fire({
+      icon:'error',
+      title:I18N.t('required'),
+      text:e.message||'Register failed',
+      confirmButtonText:I18N.t('ok')
+    });
+
+    isSubmitting=false;
+    submitBtn.disabled=false;
+    submitBtn.removeAttribute('aria-busy');
+    submitBtn.textContent=originalSubmitText;
+  }
+};
+
+init();</script></body></html>
