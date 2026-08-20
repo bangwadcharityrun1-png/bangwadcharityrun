@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>สมัครงานวิ่ง</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="topbar"><div class="inner"><div class="brand">RUN REGISTRATION</div><a href="admin/login.html">Admin</a></div></header>
+  <main class="container">
+    <section class="hero"><h1>สมัครงานวิ่งออนไลน์</h1><div>เลือกงานวิ่งและระยะที่ต้องการสมัคร</div></section>
+    <div id="message"></div>
+    <div id="events" class="grid"></div>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="config.js"></script>
+  <script src="js/supabase-client.js"></script>
+  <script>
+    const root = document.getElementById('events');
+    const msg = document.getElementById('message');
+
+    const fmtDate = value => value ? new Intl.DateTimeFormat('th-TH',{dateStyle:'long'}).format(new Date(value+'T00:00:00')) : '-';
+
+    async function loadEvents(){
+      const {data,error} = await sb.from('events').select('*').in('status',['open','closed']).order('event_date');
+      if(error){ msg.innerHTML = `<div class="error">${error.message}</div>`; return; }
+      if(!data?.length){ root.innerHTML = '<div class="card">ยังไม่มีงานที่เปิดรับสมัคร</div>'; return; }
+      root.innerHTML = data.map(e => `
+        <article class="card">
+          ${e.cover_url ? `<img class="event-cover" src="${e.cover_url}" alt="">` : '<div class="event-cover"></div>'}
+          <h2>${e.name}</h2>
+          <div class="muted">${fmtDate(e.event_date)} · ${e.venue || '-'}</div>
+          <p>${e.description || ''}</p>
+          <div class="row space">
+            <span class="badge ${e.status}">${e.status === 'open' ? 'เปิดรับสมัคร' : 'ปิดรับสมัคร'}</span>
+            ${e.status === 'open' ? `<a class="btn btn-primary" href="register.html?event=${encodeURIComponent(e.slug)}">สมัครเลย</a>` : ''}
+          </div>
+        </article>`).join('');
+    }
+    loadEvents();
+  </script>
+</body>
+</html>

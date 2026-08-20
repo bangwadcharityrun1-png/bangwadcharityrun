@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="th">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>สถานะการสมัคร</title><link rel="stylesheet" href="styles.css"></head>
+<body>
+<header class="topbar"><div class="inner"><a href="index.html" class="brand">← RUN REGISTRATION</a></div></header>
+<main class="container"><div id="root" class="card" style="max-width:720px;margin:auto"><div class="muted">กำลังโหลดสถานะ...</div></div></main>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="config.js"></script>
+<script>
+const root=document.getElementById('root');
+const token=new URLSearchParams(location.search).get('token');
+const statusText={payment_review:'รอตรวจสอบการชำระเงิน',approved:'อนุมัติแล้ว',rejected:'ไม่อนุมัติ',cancelled:'ยกเลิก'};
+async function load(){
+ if(!token){root.innerHTML='<div class="error">ไม่พบ Token สำหรับตรวจสอบสถานะ</div>';return;}
+ try{
+  const url=`${APP_CONFIG.SUPABASE_URL}/functions/v1/registration-status?token=${encodeURIComponent(token)}`;
+  const res=await fetch(url,{headers:{apikey:APP_CONFIG.SUPABASE_ANON_KEY,Authorization:`Bearer ${APP_CONFIG.SUPABASE_ANON_KEY}`}});
+  const x=await res.json(); if(!res.ok) throw new Error(x.error||'โหลดข้อมูลไม่สำเร็จ');
+  root.innerHTML=`
+    <div class="row space"><div><div class="muted">เลขที่ใบสมัคร</div><h2 style="margin-top:4px">${x.registration_no}</h2></div><span class="badge ${x.status}">${statusText[x.status]||x.status}</span></div>
+    <hr style="border:0;border-top:1px solid #e5e7eb;margin:18px 0">
+    <h1>${x.event_name}</h1>
+    <p><b>${x.runner_name}</b><br>${x.category_name}</p>
+    ${x.status==='approved' ? `
+      <div class="success"><b>การสมัครได้รับการอนุมัติแล้ว</b></div>
+      <div style="text-align:center;padding:24px 0"><div class="muted">หมายเลข BIB</div><div style="font-size:58px;font-weight:900;line-height:1.1">${x.bib_number}</div><div id="qrcode" style="display:flex;justify-content:center;margin:22px 0 10px"></div><div class="muted">ใช้ QR นี้สำหรับรับ BIB / เช็กอิน / Start / CP / Finish</div></div>` : ''}
+    ${x.status==='rejected' ? `<div class="error"><b>ไม่อนุมัติ:</b> ${x.rejection_reason||'กรุณาติดต่อผู้จัดงาน'}</div>` : ''}
+    ${x.status==='payment_review' ? `<div class="notice">เจ้าหน้าที่กำลังตรวจสอบสลิป เมื่ออนุมัติแล้วหน้านี้จะแสดงหมายเลข BIB และ QR อัตโนมัติ</div>` : ''}
+  `;
+  if(x.status==='approved' && x.qr_value){ new QRCode(document.getElementById('qrcode'),{text:x.qr_value,width:220,height:220,correctLevel:QRCode.CorrectLevel.M}); }
+ }catch(e){root.innerHTML=`<div class="error">${e.message}</div>`}
+}
+load();
+</script></body></html>
