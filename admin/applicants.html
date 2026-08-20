@@ -89,6 +89,7 @@
   </div>
 </main>
 
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="../config.js"></script>
 <script src="../js/app.js"></script>
@@ -107,6 +108,8 @@
   if(['pending','approved','rejected'].includes(initialStatus)){
     $('#statusFilter').value=initialStatus;
   }
+
+  let reviewBusy=false;
 
   async function load(){
     const {data,error}=await sb
@@ -172,22 +175,104 @@
     window.open(data.signedUrl,'_blank','noopener');
   }
 
+  function lockReviewButtons(locked,label=''){
+    const approve=$('#approve');
+    const reject=$('#reject');
+    if(approve){
+      approve.disabled=locked;
+      if(label)approve.textContent=label;
+    }
+    if(reject){
+      reject.disabled=locked;
+      if(label)reject.textContent=label;
+    }
+  }
+
   async function review(id,status){
-    let reason=null;
-    if(status==='rejected'){
-      reason=prompt('เหตุผลที่ไม่อนุมัติ (ถ้ามี):','')||'';
+    if(reviewBusy)return;
+
+    const current=all.find(x=>x.id===id);
+    if(!current||current.status!=='pending'){
+      await Swal.fire({
+        icon:'info',
+        title:'รายการนี้ดำเนินการแล้ว',
+        text:'ไม่สามารถอนุมัติหรือไม่อนุมัติซ้ำได้',
+        confirmButtonText:'ตกลง'
+      });
+      return;
     }
 
-    const {error}=await sb.rpc('admin_review_registration',{
+    const approving=status==='approved';
+    let reason=null;
+
+    const confirmResult=await Swal.fire({
+      icon:'warning',
+      title:approving?'ยืนยันอนุมัติผู้สมัคร?':'ยืนยันไม่อนุมัติผู้สมัคร?',
+      html:approving
+        ? `<div style="line-height:1.65">คุณกำลังอนุมัติ <b>${APP.esc(current.first_name+' '+current.last_name)}</b><br>เมื่อยืนยัน ระบบจะสร้างเลข BIB และไม่ควรกดเปลี่ยนสถานะโดยไม่ตรวจสอบ</div>`
+        : `<div style="line-height:1.65">คุณกำลังไม่อนุมัติ <b>${APP.esc(current.first_name+' '+current.last_name)}</b><br>กรุณาตรวจสอบข้อมูลให้แน่ใจก่อนดำเนินการ</div>`,
+      input:approving?undefined:'textarea',
+      inputLabel:approving?undefined:'เหตุผลที่ไม่อนุมัติ (ถ้ามี)',
+      inputPlaceholder:approving?undefined:'ระบุเหตุผล...',
+      inputAttributes:approving?undefined:{maxlength:'500'},
+      showCancelButton:true,
+      confirmButtonText:approving?'ใช่, อนุมัติ':'ใช่, ไม่อนุมัติ',
+      cancelButtonText:'ยกเลิก',
+      reverseButtons:true,
+      focusCancel:true
+    });
+
+    if(!confirmResult.isConfirmed)return;
+    if(!approving)reason=String(confirmResult.value||'').trim();
+
+    reviewBusy=true;
+    lockReviewButtons(true,'กำลังบันทึก...');
+
+    Swal.fire({
+      title:'กำลังบันทึกข้อมูล...',
+      text:'กรุณารอสักครู่',
+      allowOutsideClick:false,
+      allowEscapeKey:false,
+      showConfirmButton:false,
+      didOpen:()=>Swal.showLoading()
+    });
+
+    const {data,error}=await sb.rpc('admin_review_registration',{
       p_registration_id:id,
       p_status:status,
       p_reason:reason
     });
 
-    if(error)return ADMIN.toast(error.message,'error');
+    if(error){
+      reviewBusy=false;
+      Swal.close();
+      lockReviewButtons(false);
+      showDetail(current);
 
-    ADMIN.toast(status==='approved'?'อนุมัติผู้สมัครแล้ว':'บันทึกไม่อนุมัติแล้ว');
+      await Swal.fire({
+        icon:'error',
+        title:'บันทึกไม่สำเร็จ',
+        text:error.message,
+        confirmButtonText:'ตกลง'
+      });
+      return;
+    }
+
     await load();
+    reviewBusy=false;
+
+    const updated=Array.isArray(data)?data[0]:data;
+    const bib=updated?.bib_number||all.find(x=>x.id===id)?.bib_number||'';
+
+    await Swal.fire({
+      icon:'success',
+      title:approving?'อนุมัติเรียบร้อยแล้ว':'บันทึกไม่อนุมัติเรียบร้อยแล้ว',
+      html:approving&&bib
+        ? `ระบบบันทึกสถานะแล้ว<br><b>BIB: ${APP.esc(bib)}</b>`
+        : 'ระบบบันทึกสถานะเรียบร้อยแล้ว',
+      confirmButtonText:'ตกลง',
+      allowOutsideClick:false
+    });
   }
 
   function showDetail(r){
@@ -224,14 +309,16 @@
 
       <div class="action-row">
         <button class="btn btn-light" id="openSlip">เปิดสลิป</button>
-        <button class="btn btn-dark" id="approve" ${r.status==='approved'?'disabled':''}>อนุมัติ</button>
-        <button class="btn btn-danger" id="reject" ${r.status==='rejected'?'disabled':''}>ไม่อนุมัติ</button>
+        <button class="btn btn-dark" id="approve" ${r.status!=='pending'?'disabled':''}>${r.status==='approved'?'อนุมัติแล้ว':'อนุมัติ'}</button>
+        <button class="btn btn-danger" id="reject" ${r.status!=='pending'?'disabled':''}>${r.status==='rejected'?'ไม่อนุมัติแล้ว':'ไม่อนุมัติ'}</button>
       </div>
     `;
 
     $('#openSlip').onclick=()=>openSlip(p.slip_path);
-    $('#approve').onclick=()=>review(r.id,'approved');
-    $('#reject').onclick=()=>review(r.id,'rejected');
+    if(r.status==='pending'){
+      $('#approve').onclick=()=>review(r.id,'approved');
+      $('#reject').onclick=()=>review(r.id,'rejected');
+    }
   }
 
   $('#q').oninput=render;
