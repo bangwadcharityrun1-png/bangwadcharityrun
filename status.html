@@ -62,7 +62,19 @@
       font-weight:950;
       cursor:pointer
     }
-    .save-card-btn:disabled{opacity:.58;cursor:not-allowed}
+    .share-card-btn{
+      width:100%;
+      border:1px solid #d8dde7;
+      background:#fff;
+      color:#111827;
+      border-radius:14px;
+      min-height:50px;
+      padding:13px 16px;
+      margin-top:9px;
+      font-weight:950;
+      cursor:pointer
+    }
+    .save-card-btn:disabled,.share-card-btn:disabled{opacity:.58;cursor:not-allowed}
     .save-hint{text-align:center;color:#64748b;font-size:.76rem;line-height:1.45;margin-top:8px}
     .capture-brand{font-size:.72rem;color:#94a3b8;text-align:center;margin-top:14px;font-weight:800;letter-spacing:.06em}
 
@@ -162,9 +174,12 @@
       qrTitle:'QR CODE ผู้เข้าแข่งขัน',
       qrCaption:'QR Code นี้สร้างจากเลข BIB และใช้สำหรับตรวจสอบผู้เข้าแข่งขัน',
       approvedNote:'การสมัครได้รับการอนุมัติแล้ว กรุณาเก็บบัตรนี้ไว้ในโทรศัพท์เพื่อใช้ในวันงาน',
-      save:'บันทึก / แชร์บัตรผู้เข้าแข่งขัน',
+      save:'บันทึกลงเครื่อง',
+      share:'แชร์',
       saving:'กำลังสร้างรูป...',
-      saveHint:'บนมือถือ ระบบจะเปิดเมนูแชร์ถ้ารองรับ หรือดาวน์โหลดเป็นไฟล์ PNG',
+      sharing:'กำลังเตรียมแชร์...',
+      saveHint:'กด “บันทึกลงเครื่อง” เพื่อดาวน์โหลดบัตรเป็นไฟล์ PNG โดยตรง',
+      shareUnavailable:'อุปกรณ์หรือเบราว์เซอร์นี้ไม่รองรับการแชร์ไฟล์',
       saveFailed:'ไม่สามารถบันทึกรูปได้ กรุณาลองใหม่อีกครั้ง',
       noBib:'อนุมัติแล้วแต่ยังไม่พบเลข BIB กรุณาติดต่อเจ้าหน้าที่',
       brand:'TOP100 CHARITY RUN • PARTICIPANT CARD',
@@ -191,9 +206,12 @@
       qrTitle:'PARTICIPANT QR CODE',
       qrCaption:'This QR Code is generated from your BIB number for participant verification.',
       approvedNote:'Your registration has been approved. Save this participant card on your phone for event day.',
-      save:'Save / Share Participant Card',
+      save:'Save to device',
+      share:'Share',
       saving:'Creating image...',
-      saveHint:'On supported phones, the share sheet will open. Otherwise a PNG file will be downloaded.',
+      sharing:'Preparing to share...',
+      saveHint:'Tap “Save to device” to download the participant card directly as a PNG file.',
+      shareUnavailable:'This device or browser does not support file sharing.',
       saveFailed:'Could not save the image. Please try again.',
       noBib:'Approved, but no BIB number was found. Please contact staff.',
       brand:'TOP100 CHARITY RUN • PARTICIPANT CARD',
@@ -220,9 +238,12 @@
       qrTitle:'参赛者二维码',
       qrCaption:'此二维码由 BIB 号码生成，用于参赛者身份核验。',
       approvedNote:'您的报名已获批准。请将此参赛卡保存在手机中，以便活动当天使用。',
-      save:'保存 / 分享参赛卡',
+      save:'保存到设备',
+      share:'分享',
       saving:'正在生成图片...',
-      saveHint:'支持的手机会打开分享菜单，否则将下载 PNG 图片。',
+      sharing:'正在准备分享...',
+      saveHint:'点击“保存到设备”可直接下载 PNG 格式的参赛卡。',
+      shareUnavailable:'此设备或浏览器不支持文件分享。',
       saveFailed:'无法保存图片，请重试。',
       noBib:'报名已批准，但未找到 BIB 号码，请联系工作人员。',
       brand:'TOP100 CHARITY RUN • PARTICIPANT CARD',
@@ -249,9 +270,12 @@
       qrTitle:'QR-КОД УЧАСТНИКА',
       qrCaption:'QR-код создан из номера BIB и используется для идентификации участника.',
       approvedNote:'Регистрация одобрена. Сохраните карточку участника на телефоне для использования в день мероприятия.',
-      save:'Сохранить / поделиться карточкой',
+      save:'Сохранить на устройство',
+      share:'Поделиться',
       saving:'Создаем изображение...',
-      saveHint:'На поддерживаемых телефонах откроется меню «Поделиться», иначе будет загружен PNG-файл.',
+      sharing:'Подготавливаем файл...',
+      saveHint:'Нажмите «Сохранить на устройство», чтобы напрямую скачать карточку в формате PNG.',
+      shareUnavailable:'Это устройство или браузер не поддерживает отправку файлов.',
       saveFailed:'Не удалось сохранить изображение. Попробуйте еще раз.',
       noBib:'Регистрация одобрена, но номер BIB не найден. Обратитесь к сотрудникам.',
       brand:'TOP100 CHARITY RUN • PARTICIPANT CARD',
@@ -295,54 +319,84 @@
     return qr.createDataURL(8,4);
   }
 
-  async function saveParticipantCard(bib){
+  async function participantCardPng(bib){
     const card=$('#participantCard');
+    if(!card)throw new Error('Participant card not found');
+    if(typeof html2canvas!=='function')throw new Error('html2canvas unavailable');
+
+    const canvas=await html2canvas(card,{
+      backgroundColor:'#ffffff',
+      scale:Math.min(3,Math.max(2,window.devicePixelRatio||2)),
+      useCORS:true,
+      logging:false
+    });
+
+    const blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/png',1));
+    if(!blob)throw new Error('PNG creation failed');
+
+    const safeBib=String(bib).replace(/[^A-Za-z0-9_-]/g,'_');
+    return {
+      blob,
+      safeBib,
+      file:new File([blob],`${safeBib}.png`,{type:'image/png'})
+    };
+  }
+
+  async function saveParticipantCard(bib){
     const btn=$('#saveParticipantCard');
-    if(!card||!btn)return;
+    if(!btn)return;
 
     const originalText=btn.textContent;
     btn.disabled=true;
     btn.textContent=t[lang].saving;
 
     try{
-      if(typeof html2canvas!=='function')throw new Error('html2canvas unavailable');
-
-      const canvas=await html2canvas(card,{
-        backgroundColor:'#ffffff',
-        scale:Math.min(3,Math.max(2,window.devicePixelRatio||2)),
-        useCORS:true,
-        logging:false
-      });
-
-      const blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/png',1));
-      if(!blob)throw new Error('PNG creation failed');
-
-      const safeBib=String(bib).replace(/[^A-Za-z0-9_-]/g,'_');
-      const file=new File([blob],`${safeBib}.png`,{type:'image/png'});
-
-      if(navigator.canShare && navigator.canShare({files:[file]}) && navigator.share){
-        try{
-          await navigator.share({
-            files:[file],
-            title:`TOP100 ${bib}`
-          });
-          return;
-        }catch(err){
-          if(err?.name==='AbortError')return;
-        }
-      }
-
+      const {blob,safeBib}=await participantCardPng(bib);
       const url=URL.createObjectURL(blob);
       const a=document.createElement('a');
       a.href=url;
       a.download=`${safeBib}.png`;
+      a.style.display='none';
       document.body.appendChild(a);
       a.click();
       a.remove();
-      setTimeout(()=>URL.revokeObjectURL(url),1500);
+      setTimeout(()=>URL.revokeObjectURL(url),2000);
     }catch(e){
       console.error(e);
       alert(t[lang].saveFailed);
+    }finally{
+      btn.disabled=false;
+      btn.textContent=originalText;
+    }
+  }
+
+  async function shareParticipantCard(bib){
+    const btn=$('#shareParticipantCard');
+    if(!btn)return;
+
+    const originalText=btn.textContent;
+    btn.disabled=true;
+    btn.textContent=t[lang].sharing;
+
+    try{
+      const {file}=await participantCardPng(bib);
+
+      if(!(navigator.share && navigator.canShare && navigator.canShare({files:[file]}))){
+        alert(t[lang].shareUnavailable);
+        return;
+      }
+
+      try{
+        await navigator.share({
+          files:[file],
+          title:`TOP100 ${bib}`
+        });
+      }catch(err){
+        if(err?.name!=='AbortError')throw err;
+      }
+    }catch(e){
+      console.error(e);
+      if(e?.name!=='AbortError')alert(t[lang].saveFailed);
     }finally{
       btn.disabled=false;
       btn.textContent=originalText;
@@ -408,6 +462,9 @@
       <button class="save-card-btn" id="saveParticipantCard" type="button">
         ${esc(t[lang].save)}
       </button>
+      <button class="share-card-btn" id="shareParticipantCard" type="button">
+        ${esc(t[lang].share)}
+      </button>
       <div class="save-hint">${esc(t[lang].saveHint)}</div>
     `;
   }
@@ -472,6 +529,7 @@
         const approvedCard=await renderApprovedCard(r);
         $('#result').innerHTML=base+approvedCard;
         $('#saveParticipantCard')?.addEventListener('click',()=>saveParticipantCard(r.bib_number));
+        $('#shareParticipantCard')?.addEventListener('click',()=>shareParticipantCard(r.bib_number));
       }else{
         $('#result').innerHTML=base;
       }
