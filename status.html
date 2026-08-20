@@ -1,0 +1,259 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Status • TOP100</title>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    .status-result{margin-top:16px}
+    .status-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+    .status-item{border:1px solid #e5e7eb;border-radius:12px;padding:11px 12px;background:#fafafa}
+    .status-item strong{display:block;font-size:.76rem;color:#64748b;margin-bottom:4px}
+    .status-badge{display:inline-flex;padding:7px 11px;border-radius:999px;font-weight:900;font-size:.82rem}
+    .status-badge.pending{background:#fff7ed;color:#c2410c}
+    .status-badge.approved{background:#dcfce7;color:#166534}
+    .status-badge.rejected{background:#fee2e2;color:#b91c1c}
+    .privacy-note{margin-top:14px;font-size:.8rem;color:#64748b;line-height:1.55}
+    @media(max-width:560px){.status-grid{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+<header class="topbar">
+  <div class="inner">
+    <a class="brand" href="index.html">TOP100 CHARITY RUN</a>
+    <select class="lang-select" id="lang">
+      <option value="th">🇹🇭 ไทย</option>
+      <option value="en">🇬🇧 English</option>
+      <option value="zh">🇨🇳 中文</option>
+      <option value="ru">🇷🇺 Русский</option>
+    </select>
+  </div>
+</header>
+
+<main class="container">
+  <section class="panel">
+    <div class="panel-head">
+      <div>
+        <h1 id="pageTitle">ตรวจสถานะการสมัคร</h1>
+        <p id="pageSubtitle">ค้นหาด้วยเลขบัตรประชาชนหรือ Passport ที่ใช้สมัคร</p>
+      </div>
+    </div>
+
+    <div class="panel-body">
+      <div class="form-section">
+        <div class="field">
+          <label id="docLabel" for="document">เลขบัตรประชาชน / Passport</label>
+          <input id="document" autocomplete="off" placeholder="กรอกเลขที่ใช้สมัคร">
+        </div>
+
+        <button class="btn btn-primary" id="check" style="width:100%;margin-top:12px">
+          ตรวจสถานะ
+        </button>
+      </div>
+
+      <div id="result" class="status-result" aria-live="polite"></div>
+
+      <div class="privacy-note" id="privacy">
+        ระบบใช้เลขเอกสารเพื่อค้นหาแบบตรงตัวเท่านั้น และจะไม่แสดงเลขบัตรประชาชนหรือ Passport กลับบนหน้าจอ
+      </div>
+    </div>
+  </section>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
+<script src="js/app.js"></script>
+<script>
+(()=>{
+  const $=s=>document.querySelector(s);
+
+  const t={
+    th:{
+      title:'ตรวจสถานะการสมัคร',
+      subtitle:'ค้นหาด้วยเลขบัตรประชาชนหรือ Passport ที่ใช้สมัคร',
+      doc:'เลขบัตรประชาชน / Passport',
+      placeholder:'กรอกเลขที่ใช้สมัคร',
+      check:'ตรวจสถานะ',
+      checking:'กำลังตรวจสอบ...',
+      notFound:'ไม่พบข้อมูลการสมัครจากเลขเอกสารนี้',
+      invalid:'กรุณาตรวจสอบเลขบัตรประชาชนหรือ Passport ให้ถูกต้อง',
+      appNo:'เลขใบสมัคร',
+      bib:'เลข BIB',
+      name:'ชื่อผู้สมัคร',
+      category:'ประเภท',
+      status:'สถานะ',
+      pending:'รอเจ้าหน้าที่อนุมัติ',
+      approved:'อนุมัติแล้ว',
+      rejected:'ไม่อนุมัติ',
+      reason:'เหตุผล',
+      privacy:'ระบบใช้เลขเอกสารเพื่อค้นหาแบบตรงตัวเท่านั้น และจะไม่แสดงเลขบัตรประชาชนหรือ Passport กลับบนหน้าจอ'
+    },
+    en:{
+      title:'Check registration status',
+      subtitle:'Search using the National ID or Passport number used for registration.',
+      doc:'National ID / Passport',
+      placeholder:'Enter the document number used to register',
+      check:'Check status',
+      checking:'Checking...',
+      notFound:'No registration was found for this document number.',
+      invalid:'Please check the National ID or Passport number.',
+      appNo:'Application No.',
+      bib:'BIB',
+      name:'Participant',
+      category:'Category',
+      status:'Status',
+      pending:'Pending staff approval',
+      approved:'Approved',
+      rejected:'Rejected',
+      reason:'Reason',
+      privacy:'The document number is used only for exact-match lookup and is never displayed back on this page.'
+    },
+    zh:{
+      title:'查询报名状态',
+      subtitle:'使用报名时填写的身份证或护照号码查询。',
+      doc:'身份证 / 护照号码',
+      placeholder:'输入报名时使用的证件号码',
+      check:'查询状态',
+      checking:'正在查询...',
+      notFound:'未找到该证件号码对应的报名信息。',
+      invalid:'请检查身份证或护照号码是否正确。',
+      appNo:'报名编号',
+      bib:'BIB号码',
+      name:'参赛者',
+      category:'组别',
+      status:'状态',
+      pending:'等待工作人员审核',
+      approved:'已批准',
+      rejected:'未批准',
+      reason:'原因',
+      privacy:'证件号码仅用于精确查询，页面不会显示您的身份证或护照号码。'
+    },
+    ru:{
+      title:'Проверка статуса регистрации',
+      subtitle:'Поиск по номеру ID или паспорта, указанному при регистрации.',
+      doc:'ID / Паспорт',
+      placeholder:'Введите номер документа',
+      check:'Проверить статус',
+      checking:'Проверяем...',
+      notFound:'Регистрация по этому номеру документа не найдена.',
+      invalid:'Проверьте номер ID или паспорта.',
+      appNo:'Номер заявки',
+      bib:'BIB',
+      name:'Участник',
+      category:'Категория',
+      status:'Статус',
+      pending:'Ожидает одобрения',
+      approved:'Одобрено',
+      rejected:'Отклонено',
+      reason:'Причина',
+      privacy:'Номер документа используется только для точного поиска и не отображается обратно на странице.'
+    }
+  };
+
+  let lang=localStorage.getItem('top100_lang')||'th';
+  if(!t[lang])lang='th';
+
+  const esc=v=>APP.esc(v==null?'':String(v));
+
+  function applyLang(){
+    document.documentElement.lang=lang;
+    $('#lang').value=lang;
+    $('#pageTitle').textContent=t[lang].title;
+    $('#pageSubtitle').textContent=t[lang].subtitle;
+    $('#docLabel').textContent=t[lang].doc;
+    $('#document').placeholder=t[lang].placeholder;
+    $('#check').textContent=t[lang].check;
+    $('#privacy').textContent=t[lang].privacy;
+  }
+
+  function statusText(status){
+    return {
+      pending:t[lang].pending,
+      approved:t[lang].approved,
+      rejected:t[lang].rejected
+    }[status]||status;
+  }
+
+  function showError(message){
+    $('#result').innerHTML=`<div class="error">${esc(message)}</div>`;
+  }
+
+  async function checkStatus(){
+    const documentNo=$('#document').value.trim();
+
+    if(!documentNo){
+      showError(t[lang].invalid);
+      return;
+    }
+
+    $('#check').disabled=true;
+    $('#result').innerHTML=`<div class="notice">${esc(t[lang].checking)}</div>`;
+
+    try{
+      const data=await APP.invoke('check-registration',{
+        event_slug:APP.eventSlug,
+        document_no:documentNo
+      });
+
+      if(!data?.ok)throw new Error(data?.message||t[lang].invalid);
+
+      if(!data.found){
+        $('#result').innerHTML=`<div class="notice">${esc(t[lang].notFound)}</div>`;
+        return;
+      }
+
+      const r=data.registration||{};
+
+      $('#result').innerHTML=`
+        <div class="card">
+          <div class="status-grid">
+            <div class="status-item">
+              <strong>${esc(t[lang].appNo)}</strong>
+              ${esc(r.application_no||'-')}
+            </div>
+            <div class="status-item">
+              <strong>${esc(t[lang].bib)}</strong>
+              ${esc(r.bib_number||'-')}
+            </div>
+            <div class="status-item">
+              <strong>${esc(t[lang].name)}</strong>
+              ${esc((r.first_name||'')+' '+(r.last_name||''))}
+            </div>
+            <div class="status-item">
+              <strong>${esc(t[lang].category)}</strong>
+              ${esc(r.category||'-')}
+            </div>
+            <div class="status-item">
+              <strong>${esc(t[lang].status)}</strong>
+              <span class="status-badge ${esc(r.status||'')}">${esc(statusText(r.status))}</span>
+            </div>
+          </div>
+
+          ${r.status==='rejected'&&r.reject_reason
+            ? `<div class="error" style="margin-top:12px"><strong>${esc(t[lang].reason)}:</strong> ${esc(r.reject_reason)}</div>`
+            : ''}
+        </div>`;
+    }catch(e){
+      showError(e.message||t[lang].invalid);
+    }finally{
+      $('#check').disabled=false;
+    }
+  }
+
+  $('#lang').addEventListener('change',e=>{
+    lang=e.target.value;
+    localStorage.setItem('top100_lang',lang);
+    applyLang();
+  });
+
+  $('#check').addEventListener('click',checkStatus);
+  $('#document').addEventListener('keydown',e=>{
+    if(e.key==='Enter')checkStatus();
+  });
+
+  applyLang();
+})();
+</script>
+</body>
+</html>

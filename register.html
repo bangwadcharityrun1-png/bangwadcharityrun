@@ -1,0 +1,346 @@
+<!doctype html><html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Registration • TOP100</title><link rel="stylesheet" href="styles.css"></head><body><header class="topbar"><div class="inner"><a class="brand" href="index.html">TOP100 CHARITY RUN</a><select class="lang-select" data-lang-select><option value="th">🇹🇭 ไทย</option><option value="en">🇬🇧 English</option><option value="zh">🇨🇳 中文</option><option value="ru">🇷🇺 Русский</option></select></div></header><main class="container"><section class="panel"><div class="panel-head"><h1 data-i18n="form">ฟอร์มสมัคร</h1><p id="subtitle"></p></div><div class="panel-body"><div id="message"></div><form id="form" novalidate><section class="form-section"><h3 data-i18n="category">ประเภทการแข่งขัน</h3><div class="choice" id="categories"></div></section><section class="form-section"><h3 data-i18n="applicant">ข้อมูลผู้สมัคร</h3><div class="form-grid"><div class="field"><label data-i18n="docType">ประเภทเอกสาร</label><select id="documentType"><option value="thai_id" data-i18n="thaiId">บัตรประชาชนไทย</option><option value="passport" data-i18n="passport">Passport</option></select></div><div class="field"><label id="documentLabel" data-i18n="thaiId">บัตรประชาชนไทย</label><input id="documentNo" autocomplete="off" maxlength="13" inputmode="numeric" required><small class="muted" id="documentHint"></small></div><div class="field"><label data-i18n="first">ชื่อ</label><input id="firstName" required></div><div class="field"><label data-i18n="last">นามสกุล</label><input id="lastName" required></div><div class="field"><label data-i18n="dob">วันเกิด</label><input id="birthDate" type="date" required></div><div class="field"><label data-i18n="phone">เบอร์โทรศัพท์</label><input id="phone" type="tel" required></div><div class="field full"><label data-i18n="email">อีเมล</label><input id="email" type="email"></div></div><div id="dynamicFields" class="form-grid" style="margin-top:12px"></div></section><section class="form-section"><h3 data-i18n="slip">สลิปการชำระเงิน</h3><div class="upload"><input type="file" id="slip" accept=".jpg,.jpeg,.png,image/jpeg,image/png" required><p class="muted" id="slipHelp"></p><button type="button" class="btn btn-dark" id="verify" data-i18n="verifySlip">ตรวจสอบสลิป</button></div><div id="slipStatus" style="margin-top:10px"></div></section><label class="check"><input type="checkbox" id="terms" required><span data-i18n="terms">ยืนยันว่าข้อมูลถูกต้องและยอมรับเงื่อนไข</span></label><button class="btn btn-primary" id="submitRegistration" type="submit" style="width:100%;margin-top:14px" data-i18n="submit">ยืนยันการสมัคร</button></form></div></section></main><script src="https://cdn.jsdelivr.net/npm/tesseract.js@7.0.0/dist/tesseract.min.js"></script><script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script><script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="config.js"></script><script src="js/app.js"></script><script src="js/i18n.js"></script><script>
+let eventData,cats=[],fields=[],selectedCategory=null,verificationToken=null;const el=s=>document.querySelector(s),msg=el('#message');
+function thaiIdValid(v){v=String(v).replace(/\D/g,'');if(!/^\d{13}$/.test(v)||/^(\d)\1{12}$/.test(v))return false;let sum=0;for(let i=0;i<12;i++)sum+=Number(v[i])*(13-i);return(11-(sum%11))%10===Number(v[12])}
+function passportValid(v){v=String(v).trim().toUpperCase();return /^[A-Z0-9]{6,12}$/.test(v)&&/[A-Z]/.test(v)&&/\d/.test(v)&&!(/^(.)\1+$/.test(v))}
+function renderCategories(){el('#categories').innerHTML=cats.map(c=>`<button type="button" data-id="${c.id}" class="${selectedCategory===c.id?'active':''}">${APP.esc(APP.pick(c.name_i18n,I18N.lang)||c.code)}</button>`).join('');el('#categories').querySelectorAll('button').forEach(b=>b.onclick=()=>{selectedCategory=b.dataset.id;renderCategories()})}
+function renderFields(){el('#dynamicFields').innerHTML=fields.map(f=>{const label=APP.esc(APP.pick(f.label_i18n,I18N.lang)||f.field_key),ph=APP.esc(APP.pick(f.placeholder_i18n,I18N.lang));if(f.input_type==='select'){const opts=(f.options_i18n||[]).map(o=>`<option value="${APP.esc(o.value)}">${APP.esc(APP.pick(o.label,I18N.lang)||o.value)}</option>`).join('');return `<div class="field ${f.full_width?'full':''}"><label>${label}${f.is_required?' *':''}</label><select data-dynamic="${f.field_key}" ${f.is_required?'required':''}><option value=""></option>${opts}</select></div>`}return `<div class="field ${f.full_width?'full':''}"><label>${label}${f.is_required?' *':''}</label><input data-dynamic="${f.field_key}" type="${f.input_type==='date'?'date':f.input_type==='email'?'email':'text'}" placeholder="${ph}" ${f.is_required?'required':''}></div>`}).join('')}
+function setDocMode(){const pass=el('#documentType').value==='passport';el('#documentNo').value='';el('#documentNo').maxLength=pass?12:13;el('#documentNo').inputMode=pass?'text':'numeric';el('#documentLabel').textContent=pass?I18N.t('passport'):I18N.t('thaiId');el('#documentHint').textContent=''}
+function validateDoc(){const pass=el('#documentType').value==='passport',v=el('#documentNo').value.trim().toUpperCase();const ok=pass?passportValid(v):thaiIdValid(v);el('#documentHint').textContent=ok?'✓':(pass?I18N.t('invalidPassport'):I18N.t('invalidThai'));el('#documentHint').style.color=ok?'#047857':'#b91c1c';return ok}
+async function init(){try{eventData=await APP.getEvent();cats=await APP.getCategories(eventData.id);fields=await APP.getFields(eventData.id);el('#subtitle').textContent=APP.pick(eventData.form_intro_i18n,I18N.lang);el('#slipHelp').textContent=`${I18N.t('amount')} ${Number(eventData.registration_fee)} ${I18N.t('baht')}`;renderCategories();renderFields()}catch(e){msg.innerHTML=`<div class="error">${APP.esc(e.message)}</div>`}}
+el('#documentType').onchange=setDocMode;el('#documentNo').oninput=validateDoc;window.addEventListener('languagechange',()=>{if(eventData){el('#subtitle').textContent=APP.pick(eventData.form_intro_i18n,I18N.lang);el('#slipHelp').textContent=`${I18N.t('amount')} ${Number(eventData.registration_fee)} ${I18N.t('baht')}`;renderCategories();renderFields();setDocMode()}});
+
+async function sha256Hex(file){
+  const buf=await file.arrayBuffer();
+  const hash=await crypto.subtle.digest('SHA-256',buf);
+  return [...new Uint8Array(hash)].map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+function validSlipFile(file){
+  const ext=(file.name.split('.').pop()||'').toLowerCase();
+  return ['image/jpeg','image/png'].includes(file.type)&&['jpg','jpeg','png'].includes(ext);
+}
+async function scanSlipQrInBrowser(file){
+  if(typeof jsQR!=='function')throw new Error('ไม่สามารถโหลดตัวอ่าน QR ได้ กรุณารีเฟรชหน้าเว็บ');
+  const bitmap=await createImageBitmap(file);
+  try{
+    if(bitmap.width<500||bitmap.height<500)throw new Error('รูปสลิปมีความละเอียดต่ำเกินไป');
+    if(bitmap.width>9000||bitmap.height>9000)throw new Error('รูปภาพมีความละเอียดสูงเกินไป กรุณาใช้ภาพสลิปขนาดปกติ');
+
+    const maxSide=1400;
+    const scale=Math.min(1,maxSide/Math.max(bitmap.width,bitmap.height));
+    const w=Math.max(1,Math.round(bitmap.width*scale));
+    const h=Math.max(1,Math.round(bitmap.height*scale));
+
+    const canvas=document.createElement('canvas');
+    canvas.width=w; canvas.height=h;
+    const ctx=canvas.getContext('2d',{willReadFrequently:true});
+    if(!ctx)throw new Error('เบราว์เซอร์ไม่สามารถอ่านรูปภาพได้');
+    ctx.drawImage(bitmap,0,0,w,h);
+    const image=ctx.getImageData(0,0,w,h);
+
+    // สแกนปกติก่อน เพื่อลด CPU
+    let qr=jsQR(image.data,w,h,{inversionAttempts:'dontInvert'});
+    // ถ้ายังไม่เจอ ค่อยลองภาพกลับสีอีกครั้ง
+    if(!qr)qr=jsQR(image.data,w,h,{inversionAttempts:'onlyInvert'});
+
+    if(!qr?.data)throw new Error('ไม่พบ QR สำหรับตรวจสอบสลิป กรุณาใช้รูปสลิปธนาคารจริงที่เห็น QR ชัดเจน');
+    return String(qr.data).trim();
+  }finally{
+    bitmap.close?.();
+  }
+}
+
+
+function localSlipText(key,vars={}){
+  const lang=I18N.lang||'th';
+  const t={
+    th:{
+      ocrLoading:'กำลังอ่านยอดเงินจากสลิป...',
+      ocrUnavailable:'ไม่สามารถโหลดระบบอ่านยอดเงินได้ กรุณารีเฟรชหน้าเว็บ',
+      ocrNoAmount:'ไม่พบยอดเงินที่อ่านได้ชัดเจนจากสลิป กรุณาใช้ภาพสลิปที่คมชัด',
+      ocrMismatch:'ยอดเงินในสลิปไม่ตรงกับค่าสมัคร พบ {found} บาท แต่ต้องชำระ {expected} บาท',
+      ocrMismatchUnknown:'ไม่พบยอด {expected} บาทในสลิป กรุณาตรวจสอบสลิปให้ถูกต้อง',
+      ocrMatched:'พบยอด {expected} บาทในภาพสลิป',
+      screened:'ผ่านการคัดกรองเบื้องต้น • ยังรอ Admin ยืนยันเงินจริง'
+    },
+    en:{
+      ocrLoading:'Reading the payment amount from the slip...',
+      ocrUnavailable:'The amount-reading module could not be loaded. Please refresh the page.',
+      ocrNoAmount:'No readable payment amount was found. Please use a clear bank slip image.',
+      ocrMismatch:'Slip amount does not match. Found {found} THB; expected {expected} THB.',
+      ocrMismatchUnknown:'The expected amount of {expected} THB was not found on the slip.',
+      ocrMatched:'Found {expected} THB on the slip image.',
+      screened:'Pre-screening passed • Final bank receipt confirmation is still pending Admin review'
+    },
+    zh:{
+      ocrLoading:'正在读取付款凭证金额...',
+      ocrUnavailable:'无法加载金额识别模块，请刷新页面。',
+      ocrNoAmount:'无法清楚识别付款金额，请上传清晰的银行付款凭证。',
+      ocrMismatch:'付款金额不符。识别到 {found} 泰铢，应付 {expected} 泰铢。',
+      ocrMismatchUnknown:'付款凭证中未识别到应付金额 {expected} 泰铢。',
+      ocrMatched:'已在付款凭证图片中识别到 {expected} 泰铢。',
+      screened:'初步筛查通过 • 仍需管理员确认实际到账'
+    },
+    ru:{
+      ocrLoading:'Считываем сумму платежа с квитанции...',
+      ocrUnavailable:'Не удалось загрузить модуль распознавания суммы. Обновите страницу.',
+      ocrNoAmount:'Не удалось уверенно распознать сумму. Загрузите четкое изображение банковской квитанции.',
+      ocrMismatch:'Сумма не совпадает. Найдено {found} бат, требуется {expected} бат.',
+      ocrMismatchUnknown:'На квитанции не найдена ожидаемая сумма {expected} бат.',
+      ocrMatched:'На изображении квитанции найдена сумма {expected} бат.',
+      screened:'Предварительная проверка пройдена • фактическое поступление денег еще должен подтвердить администратор'
+    }
+  };
+  let s=(t[lang]||t.th)[key]||key;
+  Object.entries(vars).forEach(([k,v])=>s=s.replaceAll(`{${k}}`,String(v)));
+  return s;
+}
+
+async function makeOcrCanvas(file){
+  const bitmap=await createImageBitmap(file);
+  try{
+    const maxSide=1800;
+    const scale=Math.min(1,maxSide/Math.max(bitmap.width,bitmap.height));
+    const w=Math.max(1,Math.round(bitmap.width*scale));
+    const h=Math.max(1,Math.round(bitmap.height*scale));
+    const canvas=document.createElement('canvas');
+    canvas.width=w;
+    canvas.height=h;
+    const ctx=canvas.getContext('2d',{willReadFrequently:true});
+    if(!ctx)throw new Error('Cannot read image');
+    ctx.drawImage(bitmap,0,0,w,h);
+    return canvas;
+  }finally{
+    bitmap.close?.();
+  }
+}
+
+function extractMoneyCandidates(text){
+  const clean=String(text||'')
+    .replace(/[Oo]/g,'0')
+    .replace(/,/g,'')
+    .replace(/\s+/g,' ');
+  const out=[];
+  const rx=/(?:^|[^\d])(\d{1,6}(?:\.\d{1,2})?)(?=$|[^\d])/g;
+  for(const m of clean.matchAll(rx)){
+    const raw=m[1];
+    const n=Number(raw);
+    if(!Number.isFinite(n)||n<1||n>1000000)continue;
+    out.push({raw,value:n,hasDecimal:raw.includes('.')});
+  }
+  return out;
+}
+
+function chooseLikelyWrongAmount(candidates,expected){
+  const moneyLike=candidates
+    .filter(x=>x.hasDecimal || x.value<=100000)
+    .filter(x=>Math.abs(x.value-expected)>0.009);
+  moneyLike.sort((a,b)=>{
+    if(a.hasDecimal!==b.hasDecimal)return a.hasDecimal?-1:1;
+    return Math.abs(a.value-expected)-Math.abs(b.value-expected);
+  });
+  return moneyLike[0]?.value ?? null;
+}
+
+async function readExpectedAmountFromSlip(file,expected){
+  if(!window.Tesseract?.createWorker){
+    throw new Error(localSlipText('ocrUnavailable'));
+  }
+
+  const canvas=await makeOcrCanvas(file);
+  let worker;
+  try{
+    // ตัวเลขบนสลิปใช้ภาษาเดียวกัน จึงใช้ eng เพื่อลดขนาดข้อมูล OCR
+    worker=await Tesseract.createWorker('eng');
+    await worker.setParameters({
+      tessedit_char_whitelist:'0123456789., ',
+      preserve_interword_spaces:'1'
+    });
+    const result=await worker.recognize(canvas);
+    const candidates=extractMoneyCandidates(result?.data?.text||'');
+    const match=candidates.find(x=>Math.abs(x.value-Number(expected))<0.009);
+
+    if(match){
+      return {
+        matched:true,
+        detectedAmount:Number(expected),
+        candidates:candidates.map(x=>x.value).slice(0,30)
+      };
+    }
+
+    return {
+      matched:false,
+      detectedAmount:chooseLikelyWrongAmount(candidates,Number(expected)),
+      candidates:candidates.map(x=>x.value).slice(0,30)
+    };
+  }finally{
+    if(worker)await worker.terminate();
+  }
+}
+
+el('#verify').onclick=async()=>{
+  verificationToken=null;
+  const file=el('#slip').files[0];
+  if(!file){
+    el('#slipStatus').innerHTML=`<div class="error">${I18N.t('slipRequired')}</div>`;
+    return;
+  }
+
+  if(!validSlipFile(file)){
+    el('#slip').value='';
+    el('#slipStatus').innerHTML='<div class="error">รองรับเฉพาะ JPG / JPEG / PNG เท่านั้น</div>';
+    return;
+  }
+
+  if(file.size<15000||file.size>6*1024*1024){
+    el('#slipStatus').innerHTML='<div class="error">ไฟล์สลิปต้องมีขนาด 15 KB ถึง 6 MB</div>';
+    return;
+  }
+
+  const expectedAmount=Number(eventData?.registration_fee||0);
+  if(!Number.isFinite(expectedAmount)||expectedAmount<=0){
+    el('#slipStatus').innerHTML='<div class="error">ไม่พบค่าสมัครที่ถูกต้องในระบบ</div>';
+    return;
+  }
+
+  try{
+    el('#slipStatus').innerHTML=`<div class="notice">${I18N.t('checking')}</div>`;
+
+    const [qrPayload,fileHash]=await Promise.all([
+      scanSlipQrInBrowser(file),
+      sha256Hex(file)
+    ]);
+
+    el('#slipStatus').innerHTML=`<div class="notice">${APP.esc(localSlipText('ocrLoading'))}</div>`;
+    const amountResult=await readExpectedAmountFromSlip(file,expectedAmount);
+
+    if(!amountResult.matched){
+      const found=amountResult.detectedAmount;
+      const message=found!==null
+        ? localSlipText('ocrMismatch',{found:Number(found).toFixed(2),expected:expectedAmount.toFixed(2)})
+        : localSlipText('ocrMismatchUnknown',{expected:expectedAmount.toFixed(2)});
+      el('#slipStatus').innerHTML=`<div class="error">${APP.esc(message)}</div>`;
+      return;
+    }
+
+    const fd=new FormData();
+    fd.append('event_slug',APP.eventSlug);
+    fd.append('slip',file);
+    fd.append('qr_payload',qrPayload);
+    fd.append('file_sha256',fileHash);
+    fd.append('detected_amount',String(amountResult.detectedAmount));
+
+    const {data,error}=await sb.functions.invoke('verify-slip',{body:fd});
+    if(error){
+      let detail=error.message||'Verification failed';
+      try{
+        const response=error.context;
+        if(response&&typeof response.clone==='function'){
+          const payload=await response.clone().json();
+          detail=payload?.message||payload?.error||detail;
+        }
+      }catch(_){}
+      throw new Error(detail);
+    }
+    if(!data?.ok)throw new Error(data?.message||'Verification failed');
+
+    verificationToken=data.verification_token;
+    const ref=data.trans_ref?` • Ref: ${APP.esc(data.trans_ref)}`:'';
+    const bank=data.sending_bank?` • Bank: ${APP.esc(data.sending_bank)}`:'';
+    const amount=` • ${Number(data.screened_amount).toFixed(2)} THB`;
+    el('#slipStatus').innerHTML=
+      `<div class="success">${APP.esc(localSlipText('ocrMatched',{expected:expectedAmount.toFixed(2)}))}${bank}${ref}${amount}<br>${APP.esc(localSlipText('screened'))}</div>`;
+  }catch(e){
+    el('#slipStatus').innerHTML=`<div class="error">${APP.esc(e.message)}</div>`;
+  }
+};
+let isSubmitting=false;
+
+el('#form').onsubmit=async ev=>{
+  ev.preventDefault();
+
+  if(isSubmitting)return;
+
+  msg.innerHTML='';
+
+  if(!selectedCategory||!validateDoc()||!el('#terms').checked){
+    msg.innerHTML=`<div class="error">${I18N.t('required')}</div>`;
+    return;
+  }
+
+  if(!verificationToken){
+    msg.innerHTML=`<div class="error">${I18N.t('slipRequired')}</div>`;
+    return;
+  }
+
+  const submitBtn=el('#submitRegistration');
+  const originalSubmitText=submitBtn.textContent;
+
+  const extra={};
+  document.querySelectorAll('[data-dynamic]').forEach(x=>extra[x.dataset.dynamic]=x.value);
+
+  const body={
+    event_slug:APP.eventSlug,
+    category_id:selectedCategory,
+    document_type:el('#documentType').value,
+    document_no:el('#documentNo').value.trim(),
+    first_name:el('#firstName').value.trim(),
+    last_name:el('#lastName').value.trim(),
+    birth_date:el('#birthDate').value,
+    phone:el('#phone').value.trim(),
+    email:el('#email').value.trim(),
+    accept_terms:true,
+    verification_token:verificationToken,
+    extra_data:extra,
+    language:I18N.lang
+  };
+
+  isSubmitting=true;
+  submitBtn.disabled=true;
+  submitBtn.setAttribute('aria-busy','true');
+  submitBtn.textContent=I18N.t('waiting');
+
+  Swal.fire({
+    title:I18N.t('savingTitle'),
+    text:I18N.t('savingHint'),
+    allowOutsideClick:false,
+    allowEscapeKey:false,
+    showConfirmButton:false,
+    didOpen:()=>Swal.showLoading()
+  });
+
+  try{
+    const data=await APP.invoke('register-runner',body);
+
+    if(!data?.ok){
+      throw new Error(data?.message||'Register failed');
+    }
+
+    await Swal.fire({
+      icon:'success',
+      title:I18N.t('approvalTitle'),
+      html:`<div style="line-height:1.65">${APP.esc(I18N.t('approvalMessage'))}<br><small style="color:#64748b">${APP.esc(I18N.t('approvalHint'))}</small></div>`,
+      confirmButtonText:I18N.t('ok'),
+      allowOutsideClick:false,
+      allowEscapeKey:false
+    });
+
+    location.href='success.html';
+  }catch(e){
+    Swal.close();
+    msg.innerHTML=`<div class="error">${APP.esc(e.message)}</div>`;
+
+    await Swal.fire({
+      icon:'error',
+      title:I18N.t('required'),
+      text:e.message||'Register failed',
+      confirmButtonText:I18N.t('ok')
+    });
+
+    isSubmitting=false;
+    submitBtn.disabled=false;
+    submitBtn.removeAttribute('aria-busy');
+    submitBtn.textContent=originalSubmitText;
+  }
+};
+
+init();</script></body></html>

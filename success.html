@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Success • TOP100</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<header class="topbar">
+  <div class="inner">
+    <a class="brand" href="index.html">TOP100 CHARITY RUN</a>
+    <select class="lang-select" id="lang">
+      <option value="th">🇹🇭 ไทย</option>
+      <option value="en">🇬🇧 English</option>
+      <option value="zh">🇨🇳 中文</option>
+      <option value="ru">🇷🇺 Русский</option>
+    </select>
+  </div>
+</header>
+
+<main class="container">
+  <section class="panel">
+    <div class="panel-head">
+      <h1 id="title">สมัครเรียบร้อยแล้ว</h1>
+    </div>
+    <div class="panel-body">
+      <div class="success" id="message">
+        ระบบบันทึกข้อมูลเรียบร้อย กรุณารอเจ้าหน้าที่ตรวจสอบและอนุมัติการสมัคร
+      </div>
+
+      <a class="btn btn-primary" id="checkStatus"
+         style="display:block;text-align:center;margin-top:14px"
+         href="status.html">ตรวจสถานะการสมัคร</a>
+
+      <a class="btn btn-dark" id="back"
+         style="display:block;text-align:center;margin-top:10px"
+         href="index.html">กลับหน้าหลัก</a>
+    </div>
+  </section>
+</main>
+
+<script>
+(()=>{
+  const t={
+    th:{
+      title:'สมัครเรียบร้อยแล้ว',
+      message:'ระบบบันทึกข้อมูลเรียบร้อย กรุณารอเจ้าหน้าที่ตรวจสอบและอนุมัติการสมัคร',
+      check:'ตรวจสถานะการสมัคร',
+      back:'กลับหน้าหลัก'
+    },
+    en:{
+      title:'Registration submitted',
+      message:'Your registration has been saved. Please wait for staff review and approval.',
+      check:'Check registration status',
+      back:'Back to home'
+    },
+    zh:{
+      title:'报名提交成功',
+      message:'系统已保存您的报名信息，请等待工作人员审核并批准。',
+      check:'查询报名状态',
+      back:'返回首页'
+    },
+    ru:{
+      title:'Заявка отправлена',
+      message:'Регистрация сохранена. Пожалуйста, дождитесь проверки и одобрения сотрудником.',
+      check:'Проверить статус регистрации',
+      back:'На главную'
+    }
+  };
+
+  let lang=localStorage.getItem('top100_lang')||'th';
+  if(!t[lang])lang='th';
+
+  const apply=()=>{
+    document.documentElement.lang=lang;
+    document.querySelector('#lang').value=lang;
+    document.querySelector('#title').textContent=t[lang].title;
+    document.querySelector('#message').textContent=t[lang].message;
+    document.querySelector('#checkStatus').textContent=t[lang].check;
+    document.querySelector('#back').textContent=t[lang].back;
+  };
+
+  document.querySelector('#lang').addEventListener('change',e=>{
+    lang=e.target.value;
+    localStorage.setItem('top100_lang',lang);
+    apply();
+  });
+
+  apply();
+})();
+</script>
+</body>
+</html>
