@@ -1,8 +1,0 @@
-<!doctype html>
-<html lang="th">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>สมัครสำเร็จ</title><link rel="stylesheet" href="styles.css"></head>
-<body>
-<header class="topbar"><div class="inner"><a href="index.html" class="brand">RUN REGISTRATION</a></div></header>
-<main class="container"><div class="card" style="max-width:650px;margin:auto;text-align:center;padding:34px"><div style="font-size:64px">✅</div><h1>รับใบสมัครแล้ว</h1><p>เลขที่ใบสมัคร</p><h2 id="regNo"></h2><div class="notice">เจ้าหน้าที่จะตรวจสอบการชำระเงิน เมื่ออนุมัติแล้วระบบจะออกหมายเลข BIB และ QR ให้ผู้สมัคร</div><br><div class="row" style="justify-content:center"><a id="statusLink" href="#" class="btn btn-success">ตรวจสอบสถานะ / ดู BIB</a><a href="index.html" class="btn btn-primary">กลับหน้าหลัก</a></div></div></main>
-<script>const p=new URLSearchParams(location.search); document.getElementById('regNo').textContent=p.get('no')||'-'; const t=p.get('token'); const a=document.getElementById('statusLink'); if(t){a.href='status.html?token='+encodeURIComponent(t)}else{a.style.display='none'}</script>
-</body></html>
