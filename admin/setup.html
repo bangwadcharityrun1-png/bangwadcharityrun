@@ -1,0 +1,202 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>ตั้งค่า Admin ครั้งแรก</title>
+  <link rel="stylesheet" href="../styles.css">
+  <style>
+    .setup-wrap{max-width:560px;margin:50px auto;padding:0 16px}
+    .setup-card{background:#fff;border:1px solid #e5e7eb;border-radius:22px;overflow:hidden;box-shadow:0 18px 42px rgba(15,23,42,.08)}
+    .setup-head{padding:26px;background:linear-gradient(135deg,#111827,#3b1765);color:#fff}
+    .setup-head h1{margin:0 0 7px;font-size:1.55rem}
+    .setup-head p{margin:0;color:#d8dee9;line-height:1.55}
+    .setup-body{padding:24px}
+    .setup-note{padding:13px 14px;border-radius:13px;background:#f5f3ff;border:1px solid #ddd6fe;color:#5b21b6;font-size:.88rem;line-height:1.55;margin-bottom:16px}
+    .setup-actions{display:grid;gap:10px;margin-top:16px}
+    .setup-link{display:block;text-align:center;margin-top:14px;color:#6d28d9;font-weight:800;text-decoration:none}
+    .hidden{display:none!important}
+  </style>
+</head>
+<body>
+  <main class="setup-wrap">
+    <section class="setup-card">
+      <div class="setup-head">
+        <h1>ตั้งค่า Superadmin ครั้งแรก</h1>
+        <p>ใช้หน้านี้เพียงครั้งเดียวเพื่อสร้างเจ้าของระบบ หลังจากนั้นให้เข้าสู่ระบบผ่านหน้า Admin Login ตามปกติ</p>
+      </div>
+      <div class="setup-body">
+        <div id="msg"></div>
+        <div id="loading" class="setup-note">กำลังตรวจสอบสถานะระบบ...</div>
+
+        <div id="already" class="hidden">
+          <div class="success">ระบบมี Admin แล้ว หน้า Setup ถูกปิดการใช้งานสำหรับการสร้าง Superadmin ใหม่</div>
+          <a class="setup-link" href="login.html">ไปหน้า Admin Login</a>
+        </div>
+
+        <div id="setup-form-wrap" class="hidden">
+          <div class="setup-note">
+            บัญชีที่สร้างจากหน้านี้จะเป็น <strong>Superadmin</strong> คนแรกของระบบ
+            กรุณาใช้ Email ที่คุณเข้าถึงได้จริงและตั้งรหัสผ่านที่คาดเดายาก
+          </div>
+
+          <form id="setup-form">
+            <div class="field">
+              <label>ชื่อที่แสดง</label>
+              <input id="display_name" required value="Super Admin" autocomplete="name">
+            </div>
+            <div class="field" style="margin-top:10px">
+              <label>Email</label>
+              <input id="email" type="email" required autocomplete="email">
+            </div>
+            <div class="field" style="margin-top:10px">
+              <label>Password</label>
+              <input id="password" type="password" minlength="8" required autocomplete="new-password">
+            </div>
+            <div class="field" style="margin-top:10px">
+              <label>ยืนยัน Password</label>
+              <input id="password2" type="password" minlength="8" required autocomplete="new-password">
+            </div>
+            <div class="setup-actions">
+              <button id="create-btn" class="btn btn-primary" type="submit">สร้าง Superadmin คนแรก</button>
+            </div>
+          </form>
+
+          <div id="confirm-wrap" class="hidden" style="margin-top:18px">
+            <div class="setup-note">
+              หาก Supabase เปิด Email Confirmation ไว้ ให้ยืนยันอีเมลก่อน จากนั้นกรอก Email/Password เดิมด้านล่างเพื่อเปิดสิทธิ์ Superadmin
+            </div>
+            <button id="finish-btn" class="btn btn-primary" style="width:100%" type="button">ยืนยันแล้ว • เปิดสิทธิ์ Superadmin</button>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="../config.js"></script>
+  <script src="../js/app.js"></script>
+  <script>
+    const msg=document.querySelector('#msg');
+    const loading=document.querySelector('#loading');
+    const already=document.querySelector('#already');
+    const wrap=document.querySelector('#setup-form-wrap');
+    const form=document.querySelector('#setup-form');
+    const confirmWrap=document.querySelector('#confirm-wrap');
+    const createBtn=document.querySelector('#create-btn');
+
+    function showMessage(text,type='error'){
+      msg.innerHTML=`<div class="${type}">${APP.esc(text)}</div>`;
+    }
+
+    async function setupStatus(){
+      const {data,error}=await sb.rpc('admin_setup_status');
+      if(error) throw error;
+      return Boolean(data?.initialized);
+    }
+
+    async function bootstrap(displayName){
+      const {data,error}=await sb.rpc('bootstrap_first_admin',{p_display_name:displayName});
+      if(error) throw error;
+      return data;
+    }
+
+    async function initialize(){
+      try{
+        const initialized=await setupStatus();
+        loading.classList.add('hidden');
+        if(initialized){
+          already.classList.remove('hidden');
+          return;
+        }
+
+        const {data:{session}}=await sb.auth.getSession();
+        if(session){
+          try{
+            await bootstrap('Super Admin');
+            location.href='index.html';
+            return;
+          }catch(e){
+            if(!String(e.message||'').includes('Admin already initialized')){
+              console.warn(e);
+            }
+          }
+        }
+        wrap.classList.remove('hidden');
+      }catch(e){
+        loading.classList.add('hidden');
+        showMessage('ยังไม่ได้ติดตั้ง admin-bootstrap.sql หรือ schema.sql เวอร์ชันล่าสุด: '+(e.message||e));
+      }
+    }
+
+    form.addEventListener('submit',async e=>{
+      e.preventDefault();
+      msg.innerHTML='';
+      const displayName=document.querySelector('#display_name').value.trim()||'Super Admin';
+      const email=document.querySelector('#email').value.trim();
+      const password=document.querySelector('#password').value;
+      const password2=document.querySelector('#password2').value;
+
+      if(password.length<8){
+        showMessage('Password ต้องมีอย่างน้อย 8 ตัวอักษร');
+        return;
+      }
+      if(password!==password2){
+        showMessage('Password ทั้งสองช่องไม่ตรงกัน');
+        return;
+      }
+
+      createBtn.disabled=true;
+      createBtn.textContent='กำลังสร้างบัญชี...';
+
+      try{
+        if(await setupStatus()){
+          already.classList.remove('hidden');
+          wrap.classList.add('hidden');
+          return;
+        }
+
+        const {data,error}=await sb.auth.signUp({email,password});
+        if(error) throw error;
+
+        if(data.session){
+          await bootstrap(displayName);
+          showMessage('สร้าง Superadmin สำเร็จ กำลังเข้าสู่ระบบ...','success');
+          setTimeout(()=>location.href='index.html',500);
+        }else{
+          confirmWrap.classList.remove('hidden');
+          showMessage('สร้างบัญชีแล้ว กรุณายืนยัน Email จากกล่องจดหมายก่อน แล้วกดปุ่ม “ยืนยันแล้ว”','success');
+        }
+      }catch(e){
+        showMessage(e.message||String(e));
+      }finally{
+        createBtn.disabled=false;
+        createBtn.textContent='สร้าง Superadmin คนแรก';
+      }
+    });
+
+    document.querySelector('#finish-btn').addEventListener('click',async()=>{
+      msg.innerHTML='';
+      const displayName=document.querySelector('#display_name').value.trim()||'Super Admin';
+      const email=document.querySelector('#email').value.trim();
+      const password=document.querySelector('#password').value;
+
+      try{
+        if(await setupStatus()){
+          location.href='login.html';
+          return;
+        }
+        const {error}=await sb.auth.signInWithPassword({email,password});
+        if(error) throw error;
+        await bootstrap(displayName);
+        showMessage('เปิดสิทธิ์ Superadmin สำเร็จ','success');
+        setTimeout(()=>location.href='index.html',400);
+      }catch(e){
+        showMessage(e.message||String(e));
+      }
+    });
+
+    initialize();
+  </script>
+</body>
+</html>
