@@ -285,6 +285,29 @@ el('#form').onsubmit=async ev=>{
 
   if(!verificationToken){
     msg.innerHTML=`<div class="error">${I18N.t('slipRequired')}</div>`;
+
+    await Swal.fire({
+      icon:'warning',
+      title:I18N.t('slipVerifyWarningTitle'),
+      text:I18N.t('slipVerifyWarningMessage'),
+      confirmButtonText:I18N.t('slipVerifyWarningConfirm'),
+      allowOutsideClick:false,
+      allowEscapeKey:true
+    });
+
+    const slipSection=el('#slip')?.closest('.form-section');
+    if(slipSection){
+      slipSection.scrollIntoView({behavior:'smooth',block:'center'});
+    }
+
+    setTimeout(()=>{
+      if(el('#slip')?.files?.length){
+        el('#verify')?.focus();
+      }else{
+        el('#slip')?.focus();
+      }
+    },350);
+
     return;
   }
 
