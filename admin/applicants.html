@@ -43,6 +43,7 @@
           <h1>อนุมัติผู้สมัคร</h1>
           <p class="muted">เปิดข้อมูล/สลิป ตรวจเงินจริง แล้วอนุมัติหรือไม่อนุมัติ</p>
         </div>
+        <button class="btn btn-dark hidden" id="exportApproved">Export Excel ผู้อนุมัติแล้ว</button>
       </div>
 
       <div id="adminMsg"></div>
@@ -91,16 +92,18 @@
 </main>
 
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="../config.js"></script>
 <script src="../js/app.js"></script>
 <script src="js/admin.js"></script>
 <script>
 (async()=>{
-  const auth=await ADMIN.guard(['superadmin','admin','approver','viewer']);
+  const auth=await ADMIN.guard('all');
   if(!auth)return;
-
+  const canExport=ADMIN.canReview(auth.profile);
   const canReview=ADMIN.canReview(auth.profile);
+
   const e=await ADMIN.event();
   const $=s=>document.querySelector(s);
   let all=[];
@@ -112,6 +115,7 @@
   }
 
   let reviewBusy=false;
+  if(canExport)$('#exportApproved').classList.remove('hidden');
 
   async function load(){
     const {data,error}=await sb
@@ -191,7 +195,7 @@
   }
 
   async function review(id,status){
-    if(reviewBusy||!canReview)return;
+    if(reviewBusy)return;
 
     const current=all.find(x=>x.id===id);
     if(!current||current.status!=='pending'){
@@ -310,21 +314,108 @@
       </div>
 
       <div class="action-row">
-        ${canReview?'<button class="btn btn-light" id="openSlip">เปิดสลิป</button>':'<span class="muted">สิทธิ์ Viewer: ดูข้อมูลอย่างเดียว</span>'}
-        <button class="btn btn-dark" id="approve" ${(!canReview||r.status!=='pending')?'disabled':''}>${r.status==='approved'?'อนุมัติแล้ว':'อนุมัติ'}</button>
-        <button class="btn btn-danger" id="reject" ${(!canReview||r.status!=='pending')?'disabled':''}>${r.status==='rejected'?'ไม่อนุมัติแล้ว':'ไม่อนุมัติ'}</button>
+        ${canReview?`<button class="btn btn-light" id="openSlip">เปิดสลิป</button>`:''}
+        ${canReview?`<button class="btn btn-dark" id="approve" ${r.status!=='pending'?'disabled':''}>${r.status==='approved'?'อนุมัติแล้ว':'อนุมัติ'}</button>`:''}
+        ${canReview?`<button class="btn btn-danger" id="reject" ${r.status!=='pending'?'disabled':''}>${r.status==='rejected'?'ไม่อนุมัติแล้ว':'ไม่อนุมัติ'}</button>`:''}
       </div>
     `;
 
     if(canReview){
       $('#openSlip').onclick=()=>openSlip(p.slip_path);
-    }
-    if(canReview&&r.status==='pending'){
-      $('#approve').onclick=()=>review(r.id,'approved');
-      $('#reject').onclick=()=>review(r.id,'rejected');
+      if(r.status==='pending'){
+        $('#approve').onclick=()=>review(r.id,'approved');
+        $('#reject').onclick=()=>review(r.id,'rejected');
+      }
     }
   }
 
+  const excelDate=v=>v?new Date(v).toLocaleString('th-TH',{year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'}):'';
+  const cleanExcelValue=v=>{
+    if(v===null||v===undefined)return '';
+    if(Array.isArray(v))return v.join(', ');
+    if(typeof v==='object')return JSON.stringify(v);
+    return v;
+  };
+
+  async function exportApprovedExcel(){
+    if(!canExport)return ADMIN.toast('ไม่มีสิทธิ์ Export Excel','error');
+    const btn=$('#exportApproved');
+    btn.disabled=true;
+    const oldText=btn.textContent;
+    btn.textContent='กำลังสร้าง Excel...';
+    try{
+      if(typeof XLSX==='undefined')throw new Error('โหลดระบบ Excel ไม่สำเร็จ กรุณาตรวจสอบอินเทอร์เน็ตแล้วลองใหม่');
+
+      const {data,error}=await sb.rpc('export_approved_registrations',{p_event_id:e.id});
+      if(error)throw error;
+      const rows=Array.isArray(data)?data:[];
+      if(!rows.length){
+        await Swal.fire({icon:'info',title:'ยังไม่มีข้อมูล',text:'ยังไม่มีผู้สมัครที่ได้รับการอนุมัติสำหรับ Export',confirmButtonText:'ตกลง'});
+        return;
+      }
+
+      const extraKeys=[...new Set(rows.flatMap(r=>Object.keys(r.extra_data||{})))].sort((a,b)=>a.localeCompare(b,'th'));
+      const excelRows=rows.map((r,index)=>{
+        const row={
+          'ลำดับ':index+1,
+          'Application No.':r.application_no||'',
+          'BIB No.':r.bib_number||'',
+          'ประเภท':r.category_code||'',
+          'ประเภทเอกสาร':r.document_type||'',
+          'เลขบัตรประชาชน / Passport':r.document_no||'',
+          'ชื่อ':r.first_name||'',
+          'นามสกุล':r.last_name||'',
+          'วันเกิด':r.birth_date||'',
+          'โทรศัพท์':r.phone||'',
+          'Email':r.email||'',
+          'ภาษา':r.language||'',
+          'สถานะ':'approved',
+          'วันที่สมัคร':excelDate(r.created_at),
+          'วันที่อนุมัติ':excelDate(r.approved_at),
+          'ยอดชำระ':Number(r.payment_amount||0),
+          'สกุลเงิน':r.payment_currency||'THB',
+          'สถานะการชำระ':r.payment_status||'',
+          'ธนาคารผู้ส่ง':r.sending_bank||'',
+          'ธนาคารผู้รับ':r.receiving_bank||'',
+          'ชื่อผู้โอน':r.sender_name||'',
+          'ชื่อผู้รับ':r.receiver_name||'',
+          'บัญชี/Proxy ผู้รับ':r.receiver_proxy||'',
+          'เลขอ้างอิงการโอน':r.trans_ref||'',
+          'เวลารายการโอน':excelDate(r.trans_timestamp),
+          'ตรวจสลิปเมื่อ':excelDate(r.verified_at)
+        };
+        extraKeys.forEach(key=>{row[key]=cleanExcelValue((r.extra_data||{})[key]);});
+        return Object.fromEntries(Object.entries(row).map(([key,value])=>[
+          key,
+          typeof value==='string'&&/^[=+\-@]/.test(value)?`'${value}`:value
+        ]));
+      });
+
+      const ws=XLSX.utils.json_to_sheet(excelRows);
+      ws['!freeze']={xSplit:0,ySplit:1};
+      const headers=Object.keys(excelRows[0]);
+      ws['!cols']=headers.map(h=>{
+        const max=Math.max(String(h).length,...excelRows.map(r=>String(r[h]??'').length));
+        return {wch:Math.min(Math.max(max+2,12),42)};
+      });
+      const wb=XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb,ws,'Approved Applicants');
+      const now=new Date();
+      const pad=n=>String(n).padStart(2,'0');
+      const filename=`TOP100-approved-${now.getFullYear()}${pad(now.getMonth()+1)}${pad(now.getDate())}-${pad(now.getHours())}${pad(now.getMinutes())}.xlsx`;
+      XLSX.writeFile(wb,filename,{compression:true});
+      ADMIN.toast(`Export สำเร็จ ${rows.length} รายการ`);
+    }catch(err){
+      console.error(err);
+      ADMIN.toast(err.message||'Export Excel ไม่สำเร็จ','error');
+      await Swal.fire({icon:'error',title:'Export ไม่สำเร็จ',text:err.message||'เกิดข้อผิดพลาด',confirmButtonText:'ตกลง'});
+    }finally{
+      btn.disabled=false;
+      btn.textContent=oldText;
+    }
+  }
+
+  $('#exportApproved').onclick=exportApprovedExcel;
   $('#q').oninput=render;
   $('#statusFilter').onchange=render;
   await load();
