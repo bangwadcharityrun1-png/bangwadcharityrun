@@ -1,0 +1,13 @@
+<!doctype html>
+<html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="../styles.css"><title>TOP100 - ตั้งรหัสผ่าน Admin</title></head>
+<body><header class="topbar"><div class="inner"><div class="brand">TOP100 ADMIN</div></div></header>
+<main class="container"><section class="panel" style="max-width:520px;margin:32px auto"><div class="panel-head"><div><h1>ตั้งรหัสผ่านผู้ดูแลระบบ</h1><p>เปิดจากลิงก์ที่ Superadmin ส่งให้</p></div></div><div class="panel-body"><div id="msg"></div><div id="form" style="display:none"><div class="field"><label>รหัสผ่านใหม่</label><input id="password" type="password" minlength="8" autocomplete="new-password" placeholder="อย่างน้อย 8 ตัวอักษร"></div><div class="field" style="margin-top:10px"><label>ยืนยันรหัสผ่าน</label><input id="confirm" type="password" minlength="8" autocomplete="new-password"></div><button class="btn btn-dark" id="save" style="width:100%;margin-top:14px">ตั้งรหัสผ่านและเข้า Admin</button></div></div></section></main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="../config.js"></script><script src="../js/app.js"></script>
+<script>(async()=>{const $=s=>document.querySelector(s);function message(text,type='notice'){$('#msg').innerHTML=`<div class="${type}">${APP.esc(text)}</div>`}
+try{const code=new URLSearchParams(location.search).get('code');if(code){const {error}=await sb.auth.exchangeCodeForSession(code);if(error)console.warn(error)}
+let {data:{session}}=await sb.auth.getSession();if(!session){await new Promise(resolve=>{const timer=setTimeout(resolve,1200);const {data}=sb.auth.onAuthStateChange((_event,s)=>{if(s){session=s;clearTimeout(timer);data.subscription.unsubscribe();resolve()}})});}
+if(!session){message('ลิงก์คำเชิญหมดอายุหรือไม่ถูกต้อง กรุณาขอลิงก์ใหม่จาก Superadmin','error');return}
+const {data:profile,error}=await sb.from('admin_profiles').select('role,is_active').eq('user_id',session.user.id).maybeSingle();if(error||!profile||!profile.is_active){message('บัญชีนี้ยังไม่มีสิทธิ์ผู้ดูแลระบบ','error');return}
+message(`ยืนยันบัญชี ${session.user.email} • Role: ${profile.role}`,'success');$('#form').style.display='block';
+$('#save').onclick=async()=>{const p=$('#password').value,c=$('#confirm').value;if(p.length<8)return message('รหัสผ่านต้องอย่างน้อย 8 ตัวอักษร','error');if(p!==c)return message('รหัสผ่านทั้งสองช่องไม่ตรงกัน','error');$('#save').disabled=true;const {error}=await sb.auth.updateUser({password:p});if(error){message(error.message,'error');$('#save').disabled=false;return}location.replace('index.html')};
+}catch(e){message(e.message||String(e),'error')}})();</script></body></html>

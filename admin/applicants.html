@@ -1,0 +1,334 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <link rel="stylesheet" href="../styles.css">
+  <title>TOP100 Admin - Approval</title>
+  <style>
+    .detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .detail-grid div{padding:10px 12px;border:1px solid #e5e7eb;border-radius:12px;background:#fafafa}
+    .detail-grid strong{display:block;font-size:.76rem;color:#64748b;margin-bottom:4px}
+    .action-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+    tr.focused{outline:2px solid #8b5cf6;outline-offset:-2px;background:#faf5ff}
+    @media(max-width:600px){.detail-grid{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+<header class="topbar">
+  <div class="inner">
+    <div class="brand">TOP100 ADMIN</div>
+    <div class="nav-actions">
+      <a href="../index.html" target="_blank">ดูเว็บไซต์</a>
+      <button class="btn btn-light" id="logout">ออกจากระบบ</button>
+    </div>
+  </div>
+</header>
+
+<main class="container">
+  <div class="admin-layout">
+    <aside class="sidebar">
+      <a href="index.html">Dashboard</a>
+      <a data-roles="superadmin,admin" href="event.html">ตั้งค่างาน/หน้าเว็บ</a>
+      <a data-roles="superadmin,admin" href="categories.html">ประเภทและรูปเสื้อ</a>
+      <a data-roles="superadmin,admin" href="fields.html">ฟอร์มสมัคร</a>
+      <a data-roles="superadmin,admin" href="payment.html">PromptPay / Telegram</a>
+      <a class="active" data-roles="superadmin,admin,approver,viewer" href="applicants.html">ผู้สมัคร</a>
+      <a data-roles="superadmin" href="users.html">ผู้ดูแลระบบ</a>
+    </aside>
+
+    <section class="admin-main">
+      <div class="admin-head">
+        <div>
+          <h1>อนุมัติผู้สมัคร</h1>
+          <p class="muted">เปิดข้อมูล/สลิป ตรวจเงินจริง แล้วอนุมัติหรือไม่อนุมัติ</p>
+        </div>
+      </div>
+
+      <div id="adminMsg"></div>
+
+      <div class="card">
+        <div class="form-grid">
+          <div class="field">
+            <label>ค้นหา</label>
+            <input id="q" placeholder="เลขใบสมัคร / ชื่อ / เอกสาร / โทร">
+          </div>
+          <div class="field">
+            <label>สถานะ</label>
+            <select id="statusFilter">
+              <option value="">ทั้งหมด</option>
+              <option value="pending">รออนุมัติ</option>
+              <option value="approved">อนุมัติแล้ว</option>
+              <option value="rejected">ไม่อนุมัติ</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div id="detail" class="card hidden" style="margin-top:12px"></div>
+
+      <div class="card" style="margin-top:12px">
+        <div class="table-wrap">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>ใบสมัคร</th>
+                <th>BIB</th>
+                <th>ชื่อ</th>
+                <th>ประเภท</th>
+                <th>ยอด</th>
+                <th>Bank / Ref</th>
+                <th>Status</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="rows"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../config.js"></script>
+<script src="../js/app.js"></script>
+<script src="js/admin.js"></script>
+<script>
+(async()=>{
+  const auth=await ADMIN.guard(['superadmin','admin','approver','viewer']);
+  if(!auth)return;
+
+  const canReview=ADMIN.canReview(auth.profile);
+  const e=await ADMIN.event();
+  const $=s=>document.querySelector(s);
+  let all=[];
+  const params=new URLSearchParams(location.search);
+  let selectedId=params.get('id')||'';
+  const initialStatus=params.get('status')||'';
+  if(['pending','approved','rejected'].includes(initialStatus)){
+    $('#statusFilter').value=initialStatus;
+  }
+
+  let reviewBusy=false;
+
+  async function load(){
+    const {data,error}=await sb
+      .from('registrations')
+      .select(`
+        id,application_no,bib_number,document_type,document_no,first_name,last_name,birth_date,
+        phone,email,extra_data,language,status,reject_reason,created_at,approved_at,
+        event_categories(code),
+        payments(status,amount,trans_ref,sending_bank,slip_path,verification_response)
+      `)
+      .eq('event_id',e.id)
+      .order('created_at',{ascending:false});
+
+    if(error)return ADMIN.toast(error.message,'error');
+    all=data||[];
+    render();
+    if(selectedId){
+      const found=all.find(x=>x.id===selectedId);
+      if(found)showDetail(found);
+    }
+  }
+
+  function render(){
+    const q=$('#q').value.trim().toLowerCase();
+    const status=$('#statusFilter').value;
+    const d=all.filter(r=>{
+      const matchQ=!q||[
+        r.application_no,r.first_name,r.last_name,r.document_no,r.phone,r.email
+      ].join(' ').toLowerCase().includes(q);
+      return matchQ&&(!status||r.status===status);
+    });
+
+    $('#rows').innerHTML=d.map(r=>`
+      <tr class="${r.id===selectedId?'focused':''}">
+        <td>${APP.esc(r.application_no)}</td>
+        <td>${APP.esc(r.bib_number||'-')}</td>
+        <td>${APP.esc(r.first_name+' '+r.last_name)}</td>
+        <td>${APP.esc(r.event_categories?.code||'')}</td>
+        <td>${Number(r.payments?.amount||0).toFixed(2)}</td>
+        <td>${APP.esc((r.payments?.sending_bank||'-')+' / '+(r.payments?.trans_ref||'-'))}</td>
+        <td><span class="pill ${r.status}">${APP.esc(r.status)}</span></td>
+        <td><button class="btn btn-light" data-view="${r.id}">ตรวจสอบ</button></td>
+      </tr>
+    `).join('');
+
+    document.querySelectorAll('[data-view]').forEach(b=>{
+      b.onclick=()=>{
+        selectedId=b.dataset.view;
+        const r=all.find(x=>x.id===selectedId);
+        if(r)showDetail(r);
+        render();
+      };
+    });
+  }
+
+  async function openSlip(path){
+    if(!path)return ADMIN.toast('ไม่พบไฟล์สลิป','error');
+    const {data,error}=await sb.storage
+      .from('registration-slips')
+      .createSignedUrl(path,180);
+
+    if(error)return ADMIN.toast(error.message,'error');
+    window.open(data.signedUrl,'_blank','noopener');
+  }
+
+  function lockReviewButtons(locked,label=''){
+    const approve=$('#approve');
+    const reject=$('#reject');
+    if(approve){
+      approve.disabled=locked;
+      if(label)approve.textContent=label;
+    }
+    if(reject){
+      reject.disabled=locked;
+      if(label)reject.textContent=label;
+    }
+  }
+
+  async function review(id,status){
+    if(reviewBusy||!canReview)return;
+
+    const current=all.find(x=>x.id===id);
+    if(!current||current.status!=='pending'){
+      await Swal.fire({
+        icon:'info',
+        title:'รายการนี้ดำเนินการแล้ว',
+        text:'ไม่สามารถอนุมัติหรือไม่อนุมัติซ้ำได้',
+        confirmButtonText:'ตกลง'
+      });
+      return;
+    }
+
+    const approving=status==='approved';
+    let reason=null;
+
+    const confirmResult=await Swal.fire({
+      icon:'warning',
+      title:approving?'ยืนยันอนุมัติผู้สมัคร?':'ยืนยันไม่อนุมัติผู้สมัคร?',
+      html:approving
+        ? `<div style="line-height:1.65">คุณกำลังอนุมัติ <b>${APP.esc(current.first_name+' '+current.last_name)}</b><br>เมื่อยืนยัน ระบบจะสร้างเลข BIB และไม่ควรกดเปลี่ยนสถานะโดยไม่ตรวจสอบ</div>`
+        : `<div style="line-height:1.65">คุณกำลังไม่อนุมัติ <b>${APP.esc(current.first_name+' '+current.last_name)}</b><br>กรุณาตรวจสอบข้อมูลให้แน่ใจก่อนดำเนินการ</div>`,
+      input:approving?undefined:'textarea',
+      inputLabel:approving?undefined:'เหตุผลที่ไม่อนุมัติ (ถ้ามี)',
+      inputPlaceholder:approving?undefined:'ระบุเหตุผล...',
+      inputAttributes:approving?undefined:{maxlength:'500'},
+      showCancelButton:true,
+      confirmButtonText:approving?'ใช่, อนุมัติ':'ใช่, ไม่อนุมัติ',
+      cancelButtonText:'ยกเลิก',
+      reverseButtons:true,
+      focusCancel:true
+    });
+
+    if(!confirmResult.isConfirmed)return;
+    if(!approving)reason=String(confirmResult.value||'').trim();
+
+    reviewBusy=true;
+    lockReviewButtons(true,'กำลังบันทึก...');
+
+    Swal.fire({
+      title:'กำลังบันทึกข้อมูล...',
+      text:'กรุณารอสักครู่',
+      allowOutsideClick:false,
+      allowEscapeKey:false,
+      showConfirmButton:false,
+      didOpen:()=>Swal.showLoading()
+    });
+
+    const {data,error}=await sb.rpc('admin_review_registration',{
+      p_registration_id:id,
+      p_status:status,
+      p_reason:reason
+    });
+
+    if(error){
+      reviewBusy=false;
+      Swal.close();
+      lockReviewButtons(false);
+      showDetail(current);
+
+      await Swal.fire({
+        icon:'error',
+        title:'บันทึกไม่สำเร็จ',
+        text:error.message,
+        confirmButtonText:'ตกลง'
+      });
+      return;
+    }
+
+    await load();
+    reviewBusy=false;
+
+    const updated=Array.isArray(data)?data[0]:data;
+    const bib=updated?.bib_number||all.find(x=>x.id===id)?.bib_number||'';
+
+    await Swal.fire({
+      icon:'success',
+      title:approving?'อนุมัติเรียบร้อยแล้ว':'บันทึกไม่อนุมัติเรียบร้อยแล้ว',
+      html:approving&&bib
+        ? `ระบบบันทึกสถานะแล้ว<br><b>BIB: ${APP.esc(bib)}</b>`
+        : 'ระบบบันทึกสถานะเรียบร้อยแล้ว',
+      confirmButtonText:'ตกลง',
+      allowOutsideClick:false
+    });
+  }
+
+  function showDetail(r){
+    const p=r.payments||{};
+    const amountScreened=p.verification_response?.amount_screened===true?'ผ่าน':'-';
+    const bankConfirmed=p.verification_response?.bank_confirmed===true?'ยืนยันแล้ว':'ยังไม่ได้ยืนยันจากธนาคาร';
+
+    $('#detail').classList.remove('hidden');
+    $('#detail').innerHTML=`
+      <div class="admin-head">
+        <div>
+          <h2 style="margin:0">${APP.esc(r.application_no)}</h2>
+          <p class="muted">${APP.esc(r.first_name+' '+r.last_name)} • ${APP.esc(r.event_categories?.code||'')} • BIB ${APP.esc(r.bib_number||'-')}</p>
+        </div>
+        <span class="pill ${r.status}">${APP.esc(r.status)}</span>
+      </div>
+
+      <div class="detail-grid">
+        <div><strong>เอกสาร</strong>${APP.esc(r.document_type)} / ${APP.esc(r.document_no)}</div>
+        <div><strong>วันเกิด</strong>${APP.esc(r.birth_date||'-')}</div>
+        <div><strong>โทรศัพท์</strong>${APP.esc(r.phone||'-')}</div>
+        <div><strong>Email</strong>${APP.esc(r.email||'-')}</div>
+        <div><strong>ยอดที่คัดกรอง</strong>${Number(p.amount||0).toFixed(2)} บาท • OCR ${amountScreened}</div>
+        <div><strong>Bank / Ref</strong>${APP.esc((p.sending_bank||'-')+' / '+(p.trans_ref||'-'))}</div>
+        <div><strong>ยืนยันเงินจริง</strong>${APP.esc(bankConfirmed)}</div>
+        <div><strong>สมัครเมื่อ</strong>${new Date(r.created_at).toLocaleString('th-TH')}</div>
+      </div>
+
+      ${r.reject_reason?`<div class="error" style="margin-top:12px">เหตุผลไม่อนุมัติ: ${APP.esc(r.reject_reason)}</div>`:''}
+
+      <div class="notice" style="margin-top:12px">
+        ก่อนอนุมัติให้เปิดสลิปและตรวจยอดเงินจริงในบัญชี/แอปธนาคารอีกครั้ง
+      </div>
+
+      <div class="action-row">
+        ${canReview?'<button class="btn btn-light" id="openSlip">เปิดสลิป</button>':'<span class="muted">สิทธิ์ Viewer: ดูข้อมูลอย่างเดียว</span>'}
+        <button class="btn btn-dark" id="approve" ${(!canReview||r.status!=='pending')?'disabled':''}>${r.status==='approved'?'อนุมัติแล้ว':'อนุมัติ'}</button>
+        <button class="btn btn-danger" id="reject" ${(!canReview||r.status!=='pending')?'disabled':''}>${r.status==='rejected'?'ไม่อนุมัติแล้ว':'ไม่อนุมัติ'}</button>
+      </div>
+    `;
+
+    if(canReview){
+      $('#openSlip').onclick=()=>openSlip(p.slip_path);
+    }
+    if(canReview&&r.status==='pending'){
+      $('#approve').onclick=()=>review(r.id,'approved');
+      $('#reject').onclick=()=>review(r.id,'rejected');
+    }
+  }
+
+  $('#q').oninput=render;
+  $('#statusFilter').onchange=render;
+  await load();
+})();
+</script>
+</body>
+</html>
