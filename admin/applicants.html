@@ -421,7 +421,6 @@
       XLSX.utils.book_append_sheet(wb,ws,'Approved Applicants');
       const now=new Date();
       const pad=n=>String(n).padStart(2,'0');
-      const category=$('#exportCategory').value;
       const categorySlug=category==='TOP100MEN'?'MEN':category==='TOP100WOMEN'?'WOMEN':'ALL';
       const filename=`TOP100-approved-${categorySlug}-${now.getFullYear()}${pad(now.getMonth()+1)}${pad(now.getDate())}-${pad(now.getHours())}${pad(now.getMinutes())}.xlsx`;
       XLSX.writeFile(wb,filename,{compression:true});
