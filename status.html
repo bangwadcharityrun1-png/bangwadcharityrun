@@ -133,6 +133,61 @@
     }
     .external-browser-help.show{display:block}
 
+    .browser-gate{
+      max-width:620px;
+      margin:28px auto 0;
+      padding:0 12px 34px
+    }
+    .browser-gate-card{
+      background:#fff;
+      border:1px solid #e5e7eb;
+      border-radius:22px;
+      padding:24px;
+      text-align:center;
+      box-shadow:0 16px 40px rgba(15,23,42,.08)
+    }
+    .browser-gate-icon{
+      width:66px;
+      height:66px;
+      margin:0 auto 14px;
+      border-radius:20px;
+      background:#fff7ed;
+      border:1px solid #fed7aa;
+      color:#c2410c;
+      display:grid;
+      place-items:center;
+      font-size:1.8rem;
+      font-weight:950
+    }
+    .browser-gate-card h1{margin:0 0 8px;font-size:1.35rem;color:#111827}
+    .browser-gate-card p{margin:0;color:#64748b;line-height:1.65;font-size:.9rem}
+    .browser-gate-btn{
+      width:100%;
+      min-height:52px;
+      margin-top:18px;
+      border:0;
+      border-radius:14px;
+      padding:13px 16px;
+      background:#111827;
+      color:#fff;
+      font-weight:950;
+      cursor:pointer
+    }
+    .browser-gate-help{
+      display:none;
+      margin-top:12px;
+      padding:12px;
+      border-radius:12px;
+      background:#fff7ed;
+      border:1px solid #fed7aa;
+      color:#9a3412;
+      text-align:left;
+      font-size:.8rem;
+      line-height:1.55
+    }
+    .browser-gate-help.show{display:block}
+    .browser-gate-app{margin-top:10px;color:#94a3b8;font-size:.76rem}
+
     @media(max-width:560px){
       .container{padding-left:10px;padding-right:10px}
       .panel{margin-top:10px;border-radius:16px}
@@ -168,7 +223,18 @@
   </div>
 </header>
 
-<main class="container">
+<section class="browser-gate" id="browserGate">
+  <div class="browser-gate-card">
+    <div class="browser-gate-icon">↗</div>
+    <h1 id="browserGateTitle">กรุณาเปิดด้วย Chrome หรือ Safari</h1>
+    <p id="browserGateText">หน้านี้ใช้สำหรับแสดง QR Code และบันทึกบัตรผู้เข้าแข่งขัน เพื่อให้ทำงานได้สมบูรณ์ กรุณาเปิดด้วย Chrome หรือ Safari</p>
+    <button class="browser-gate-btn" id="browserGateBtn" type="button">เปิดด้วย Chrome / Safari</button>
+    <div class="browser-gate-help" id="browserGateHelp"></div>
+    <div class="browser-gate-app" id="browserGateApp"></div>
+  </div>
+</section>
+
+<main class="container" id="statusApp" style="display:none">
   <section class="panel">
     <div class="panel-head">
       <div>
@@ -178,13 +244,6 @@
     </div>
 
     <div class="panel-body">
-      <div class="external-browser-notice" id="externalBrowserNotice">
-        <strong id="externalBrowserTitle">แนะนำให้เปิดด้วย Safari / Chrome</strong>
-        <p id="externalBrowserText">เพื่อให้แสดง QR Code และบันทึกบัตรผู้เข้าแข่งขันได้สมบูรณ์ แนะนำให้เปิดหน้านี้ด้วยเบราว์เซอร์ภายนอก</p>
-        <button class="external-browser-btn" id="externalBrowserBtn" type="button">เปิดด้วย Safari / Chrome</button>
-        <div class="external-browser-help" id="externalBrowserHelp"></div>
-      </div>
-
       <div class="form-section">
         <div class="field">
           <label id="docLabel" for="document">เลขบัตรประชาชน / Passport</label>
@@ -256,12 +315,12 @@
       inAppSaveInstruction:'กดค้างที่รูปด้านล่าง แล้วเลือก “บันทึกรูปภาพ”',
       inAppSaveWarning:'LINE/Facebook อาจไม่อนุญาตให้เว็บไซต์ดาวน์โหลดไฟล์โดยตรง จึงแสดงรูปจริงให้บันทึกจากภาพแทน',
       openExternal:'เปิดใน Safari / Chrome',
-      browserTitle:'แนะนำให้เปิดด้วย Safari / Chrome',
-      browserText:'เพื่อให้แสดง QR Code และบันทึกบัตรผู้เข้าแข่งขันได้สมบูรณ์ แนะนำให้เปิดหน้านี้ด้วยเบราว์เซอร์ภายนอก',
-      browserOpenIOS:'เปิดด้วย Safari / Chrome',
+      browserTitle:'กรุณาเปิดด้วย Chrome หรือ Safari',
+      browserText:'หน้านี้ใช้สำหรับแสดง QR Code และบันทึกบัตรผู้เข้าแข่งขัน เพื่อให้ทำงานได้สมบูรณ์ กรุณาเปิดด้วย Chrome หรือ Safari',
+      browserOpenIOS:'เปิดด้วย Chrome / Safari',
       browserOpenAndroid:'เปิดด้วย Chrome',
-      browserHelpIOS:'หากไม่เปิดอัตโนมัติ ให้แตะเมนู ⋯ ของแอป แล้วเลือก “เปิดในเบราว์เซอร์” หรือ “เปิดใน Safari”',
-      browserHelpAndroid:'หาก Chrome ไม่เปิดอัตโนมัติ ให้แตะเมนู ⋯ ของแอป แล้วเลือก “เปิดในเบราว์เซอร์ภายนอก”',
+      browserHelpIOS:'หากปุ่มไม่สามารถเปิดเบราว์เซอร์ภายนอกได้ ให้แตะเมนู ⋯ ของ LINE / Facebook / Instagram แล้วเลือก “เปิดในเบราว์เซอร์” หรือ “เปิดใน Safari”',
+      browserHelpAndroid:'หาก Chrome ไม่เปิดอัตโนมัติ ให้แตะเมนู ⋯ ของ LINE / Facebook / Instagram แล้วเลือก “เปิดในเบราว์เซอร์ภายนอก”',
       close:'ปิด',
       shareUnavailable:'อุปกรณ์หรือเบราว์เซอร์นี้ไม่รองรับการแชร์ไฟล์',
       saveFailed:'ไม่สามารถบันทึกรูปได้ กรุณาลองใหม่อีกครั้ง',
@@ -299,12 +358,12 @@
       inAppSaveInstruction:'Press and hold the image below, then choose “Save Image”.',
       inAppSaveWarning:'LINE/Facebook may block direct file downloads, so the actual card image is shown here for saving.',
       openExternal:'Open in Safari / Chrome',
-      browserTitle:'Open in Safari / Chrome recommended',
-      browserText:'For reliable QR display and participant-card saving, open this page in an external browser.',
-      browserOpenIOS:'Open in Safari / Chrome',
+      browserTitle:'Please open with Chrome or Safari',
+      browserText:'This page displays your QR Code and participant card. For reliable operation, please open it in Chrome or Safari.',
+      browserOpenIOS:'Open in Chrome / Safari',
       browserOpenAndroid:'Open in Chrome',
-      browserHelpIOS:'If it does not open automatically, tap the app’s ⋯ menu and choose “Open in browser” or “Open in Safari”.',
-      browserHelpAndroid:'If Chrome does not open automatically, tap the app’s ⋯ menu and choose “Open in external browser”.',
+      browserHelpIOS:'If the button cannot open an external browser, tap the ⋯ menu in LINE / Facebook / Instagram and choose “Open in browser” or “Open in Safari”.',
+      browserHelpAndroid:'If Chrome does not open automatically, tap the ⋯ menu in LINE / Facebook / Instagram and choose “Open in external browser”.',
       close:'Close',
       shareUnavailable:'This device or browser does not support file sharing.',
       saveFailed:'Could not save the image. Please try again.',
@@ -342,12 +401,12 @@
       inAppSaveInstruction:'长按下面的图片，然后选择“保存图片”。',
       inAppSaveWarning:'LINE/Facebook 可能会阻止网页直接下载文件，因此这里显示实际参赛卡图片供您保存。',
       openExternal:'在 Safari / Chrome 中打开',
-      browserTitle:'建议使用 Safari / Chrome 打开',
-      browserText:'为确保二维码正常显示并顺利保存参赛卡，建议使用外部浏览器打开此页面。',
-      browserOpenIOS:'使用 Safari / Chrome 打开',
+      browserTitle:'请使用 Chrome 或 Safari 打开',
+      browserText:'此页面用于显示二维码并保存参赛卡。为确保功能正常，请使用 Chrome 或 Safari 打开。',
+      browserOpenIOS:'使用 Chrome / Safari 打开',
       browserOpenAndroid:'使用 Chrome 打开',
-      browserHelpIOS:'如果没有自动打开，请点击应用的 ⋯ 菜单，然后选择“在浏览器中打开”或“在 Safari 中打开”。',
-      browserHelpAndroid:'如果 Chrome 没有自动打开，请点击应用的 ⋯ 菜单，然后选择“在外部浏览器中打开”。',
+      browserHelpIOS:'如果按钮无法打开外部浏览器，请点击 LINE / Facebook / Instagram 的 ⋯ 菜单，然后选择“在浏览器中打开”或“在 Safari 中打开”。',
+      browserHelpAndroid:'如果 Chrome 没有自动打开，请点击 LINE / Facebook / Instagram 的 ⋯ 菜单，然后选择“在外部浏览器中打开”。',
       close:'关闭',
       shareUnavailable:'此设备或浏览器不支持文件分享。',
       saveFailed:'无法保存图片，请重试。',
@@ -385,12 +444,12 @@
       inAppSaveInstruction:'Нажмите и удерживайте изображение ниже, затем выберите «Сохранить изображение».',
       inAppSaveWarning:'LINE/Facebook могут блокировать прямую загрузку файлов, поэтому здесь показано само изображение карточки для сохранения.',
       openExternal:'Открыть в Safari / Chrome',
-      browserTitle:'Рекомендуется открыть в Safari / Chrome',
-      browserText:'Для надежного отображения QR-кода и сохранения карточки участника откройте страницу во внешнем браузере.',
-      browserOpenIOS:'Открыть в Safari / Chrome',
+      browserTitle:'Откройте страницу в Chrome или Safari',
+      browserText:'Эта страница показывает QR-код и карточку участника. Для надежной работы откройте ее в Chrome или Safari.',
+      browserOpenIOS:'Открыть в Chrome / Safari',
       browserOpenAndroid:'Открыть в Chrome',
-      browserHelpIOS:'Если браузер не открылся автоматически, нажмите ⋯ в приложении и выберите «Открыть в браузере» или «Открыть в Safari».',
-      browserHelpAndroid:'Если Chrome не открылся автоматически, нажмите ⋯ в приложении и выберите «Открыть во внешнем браузере».',
+      browserHelpIOS:'Если кнопка не открывает внешний браузер, нажмите ⋯ в LINE / Facebook / Instagram и выберите «Открыть в браузере» или «Открыть в Safari».',
+      browserHelpAndroid:'Если Chrome не открылся автоматически, нажмите ⋯ в LINE / Facebook / Instagram и выберите «Открыть во внешнем браузере».',
       close:'Закрыть',
       shareUnavailable:'Это устройство или браузер не поддерживает отправку файлов.',
       saveFailed:'Не удалось сохранить изображение. Попробуйте еще раз.',
@@ -413,6 +472,19 @@
   const isIOS=/iPhone|iPad|iPod/i.test(ua) || (navigator.platform==='MacIntel' && navigator.maxTouchPoints>1);
   const isAndroid=/Android/i.test(ua);
 
+  const isChromeBrowser=!isSocialInApp
+    && (/Chrome\//i.test(ua) || /CriOS\//i.test(ua))
+    && !/EdgA|EdgiOS|Edg\//i.test(ua)
+    && !/OPR|Opera|SamsungBrowser/i.test(ua);
+
+  const isSafariBrowser=!isSocialInApp
+    && /Safari\//i.test(ua)
+    && !/Chrome\//i.test(ua)
+    && !/CriOS\//i.test(ua)
+    && !/FxiOS|EdgiOS|OPR|Opera|SamsungBrowser/i.test(ua);
+
+  const isSupportedBrowser=isChromeBrowser||isSafariBrowser;
+
   function cleanCurrentUrl(){
     const u=new URL(location.href);
     u.searchParams.delete('openExternalBrowser');
@@ -432,8 +504,21 @@
     return `intent://${u.host}${path}#Intent;scheme=${u.protocol.replace(':','')};package=com.android.chrome;S.browser_fallback_url=${fallback};end`;
   }
 
+  function iosChromeUrl(){
+    const u=new URL(cleanCurrentUrl());
+    const scheme=u.protocol==='https:'?'googlechromes':'googlechrome';
+    return `${scheme}://${u.host}${u.pathname}${u.search}${u.hash}`;
+  }
+
+  function showBrowserHelp(){
+    const help=$('#browserGateHelp');
+    if(!help)return;
+    help.textContent=isAndroid?t[lang].browserHelpAndroid:t[lang].browserHelpIOS;
+    help.classList.add('show');
+  }
+
   function openExternalBrowser(){
-    const help=$('#externalBrowserHelp');
+    const help=$('#browserGateHelp');
     if(help)help.classList.remove('show');
 
     if(isLineInApp){
@@ -441,27 +526,23 @@
       return;
     }
 
-    if(isAndroid && (isFacebookInApp||isInstagramInApp)){
+    if(isAndroid){
       location.href=androidChromeIntentUrl();
       setTimeout(()=>{
-        if(document.visibilityState==='visible' && help){
-          help.textContent=t[lang].browserHelpAndroid;
-          help.classList.add('show');
-        }
-      },1200);
+        if(document.visibilityState==='visible')showBrowserHelp();
+      },1400);
       return;
     }
 
-    if(isIOS && (isFacebookInApp||isInstagramInApp)){
-      if(help){
-        help.textContent=t[lang].browserHelpIOS;
-        help.classList.add('show');
-        help.scrollIntoView({behavior:'smooth',block:'nearest'});
-      }
+    if(isIOS){
+      location.href=iosChromeUrl();
+      setTimeout(()=>{
+        if(document.visibilityState==='visible')showBrowserHelp();
+      },1400);
       return;
     }
 
-    window.open(cleanCurrentUrl(),'_blank','noopener');
+    showBrowserHelp();
   }
 
   function closeSaveImageOverlay(){
@@ -485,7 +566,7 @@
     if(external){
       external.textContent=isAndroid?t[lang].browserOpenAndroid:t[lang].browserOpenIOS;
       external.href='#';
-      external.style.display=isSocialInApp?'block':'none';
+      external.style.display=!isSupportedBrowser?'block':'none';
       external.onclick=e=>{e.preventDefault();openExternalBrowser();};
     }
     overlay.classList.add('show');
@@ -502,14 +583,23 @@
     $('#check').textContent=t[lang].check;
     $('#privacy').textContent=t[lang].privacy;
 
-    const browserNotice=$('#externalBrowserNotice');
-    if(browserNotice){
-      browserNotice.classList.toggle('show',isSocialInApp);
-      $('#externalBrowserTitle').textContent=t[lang].browserTitle;
-      $('#externalBrowserText').textContent=t[lang].browserText;
-      $('#externalBrowserBtn').textContent=isAndroid?t[lang].browserOpenAndroid:t[lang].browserOpenIOS;
+    const gate=$('#browserGate');
+    const app=$('#statusApp');
+    if(gate&&app){
+      gate.style.display=isSupportedBrowser?'none':'block';
+      app.style.display=isSupportedBrowser?'block':'none';
+      $('#browserGateTitle').textContent=t[lang].browserTitle;
+      $('#browserGateText').textContent=t[lang].browserText;
+      $('#browserGateBtn').textContent=isAndroid?t[lang].browserOpenAndroid:t[lang].browserOpenIOS;
 
-      const browserHelp=$('#externalBrowserHelp');
+      let source='';
+      if(isLineInApp)source='LINE';
+      else if(isFacebookInApp)source='Facebook';
+      else if(isInstagramInApp)source='Instagram';
+      else if(!isSupportedBrowser)source='Browser';
+      $('#browserGateApp').textContent=source?`Detected: ${source}`:'';
+
+      const browserHelp=$('#browserGateHelp');
       if(browserHelp?.classList.contains('show')){
         browserHelp.textContent=isAndroid?t[lang].browserHelpAndroid:t[lang].browserHelpIOS;
       }
@@ -539,7 +629,7 @@
       const external=$('#openExternalBrowser');
       if(external)external.textContent=isAndroid?t[lang].browserOpenAndroid:t[lang].browserOpenIOS;
     }
-    if(isSocialInApp && saveHint)saveHint.textContent=t[lang].inAppSaveInstruction;
+    if(!isSupportedBrowser && saveHint)saveHint.textContent=t[lang].inAppSaveInstruction;
   }
 
   function statusText(status){
@@ -725,7 +815,7 @@
 
     try{
       const {blob,dataUrl,safeBib}=await participantCardPng(bib);
-      if(isSocialInApp){
+      if(!isSupportedBrowser){
         showSaveImageOverlay(dataUrl);
         return;
       }
@@ -842,7 +932,7 @@
       <button class="share-card-btn" id="shareParticipantCard" type="button">
         ${esc(t[lang].share)}
       </button>
-      <div class="save-hint">${esc(isSocialInApp?t[lang].inAppSaveInstruction:t[lang].saveHint)}</div>
+      <div class="save-hint">${esc(!isSupportedBrowser?t[lang].inAppSaveInstruction:t[lang].saveHint)}</div>
     `;
   }
 
@@ -923,7 +1013,7 @@
 
   $('#closeSaveImage')?.addEventListener('click',closeSaveImageOverlay);
   $('#saveImageOverlay')?.addEventListener('click',e=>{if(e.target===e.currentTarget)closeSaveImageOverlay();});
-  $('#externalBrowserBtn')?.addEventListener('click',openExternalBrowser);
+  $('#browserGateBtn')?.addEventListener('click',openExternalBrowser);
 
   $('#lang').addEventListener('change',e=>{
     lang=e.target.value;
