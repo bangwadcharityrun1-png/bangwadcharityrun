@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>TOP100 Admin - Login</title>
+  <link rel="stylesheet" href="../styles.css">
+  <style>
+    body{background:#f7f8fc;color:#111827;font-family:system-ui,-apple-system,"Segoe UI",sans-serif}
+    .auth-wrap{max-width:500px;margin:55px auto;padding:0 16px}.auth-card{background:#fff;border:1px solid #e5e7eb;border-radius:22px;overflow:hidden;box-shadow:0 18px 42px rgba(15,23,42,.08)}
+    .auth-head{padding:26px;background:linear-gradient(135deg,#111827,#3b1765);color:#fff}.auth-head h1{margin:0 0 6px;font-size:1.5rem}.auth-head p{margin:0;color:#d8dee9;font-size:.9rem}
+    .auth-body{padding:23px}.field{display:grid;gap:6px;margin-bottom:12px}.field label{font-size:.82rem;font-weight:850;color:#334155}.field input{width:100%;box-sizing:border-box;border:1px solid #d8dde7;border-radius:12px;padding:12px;font-size:16px;min-height:46px}
+    .action{width:100%;min-height:50px;border:0;border-radius:13px;background:#111827;color:#fff;font-weight:900;cursor:pointer}.error,.success,.notice{padding:12px 13px;border-radius:12px;margin-bottom:14px;line-height:1.5;font-size:.86rem}.error{background:#fef2f2;border:1px solid #fecaca;color:#b91c1c}.success{background:#ecfdf5;border:1px solid #a7f3d0;color:#047857}.notice{background:#fff7ed;border:1px solid #fed7aa;color:#9a3412}.links{display:flex;justify-content:space-between;gap:12px;margin-top:15px;flex-wrap:wrap}.links a{color:#6d28d9;font-weight:850;text-decoration:none;font-size:.85rem}
+  </style>
+</head>
+<body>
+  <main class="auth-wrap"><section class="auth-card">
+    <div class="auth-head"><h1>TOP100 ADMIN</h1><p>เข้าสู่ระบบผู้ดูแล</p></div>
+    <div class="auth-body">
+      <div id="msg"></div>
+      <form id="loginForm">
+        <div class="field"><label>Email</label><input id="email" type="email" required autocomplete="email"></div>
+        <div class="field"><label>Password</label><input id="password" type="password" required autocomplete="current-password"></div>
+        <button class="action" id="loginBtn" type="submit">เข้าสู่ระบบ</button>
+      </form>
+      <div class="links"><a href="register.html">สมัครบัญชีผู้ดูแล</a><a href="setup.html">ตั้งค่า Superadmin ครั้งแรก</a></div>
+    </div>
+  </section></main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../config.js"></script>
+<script src="../js/app.js"></script>
+<script>
+(async()=>{
+  const $=s=>document.querySelector(s),msg=$('#msg'),btn=$('#loginBtn');
+  const show=(text,type='error')=>{msg.innerHTML=`<div class="${type}">${APP.esc(text)}</div>`};
+  const qs=new URLSearchParams(location.search);
+  const reason=qs.get('error');
+  if(reason==='pending')show('บัญชีนี้กำลังรอ Superadmin อนุมัติ','notice');
+  if(reason==='rejected')show('คำขอผู้ดูแลของบัญชีนี้ถูกปฏิเสธ','error');
+  if(reason==='inactive')show('บัญชีผู้ดูแลนี้ถูกปิดใช้งาน','error');
+  if(reason==='forbidden')show('บัญชีนี้ไม่มีสิทธิ์เข้าหน้านั้น','error');
+
+  $('#loginForm').addEventListener('submit',async e=>{
+    e.preventDefault();msg.innerHTML='';btn.disabled=true;btn.textContent='กำลังเข้าสู่ระบบ...';
+    try{
+      const email=$('#email').value.trim().toLowerCase();
+      const password=$('#password').value;
+      const {data,error}=await sb.auth.signInWithPassword({email,password});
+      if(error)throw error;
+
+      let {data:profile,error:profileError}=await sb.from('admin_profiles')
+        .select('user_id,display_name,role,is_active,approval_status')
+        .eq('user_id',data.user.id).maybeSingle();
+      if(profileError)throw profileError;
+
+      if(!profile){
+        const displayName=data.user.user_metadata?.display_name||email.split('@')[0];
+        const {data:req,error:reqError}=await sb.rpc('request_admin_access',{p_display_name:displayName});
+        if(reqError)throw reqError;
+        profile=req;
+      }
+
+      if(profile.approval_status==='pending'){
+        await sb.auth.signOut();
+        show('สมัครบัญชีแล้ว • ตอนนี้กำลังรอ Superadmin เลือกสิทธิ์และอนุมัติ','notice');
+        return;
+      }
+      if(profile.approval_status==='rejected'){
+        await sb.auth.signOut();show('คำขอผู้ดูแลของบัญชีนี้ถูกปฏิเสธ','error');return;
+      }
+      if(!profile.is_active){
+        await sb.auth.signOut();show('บัญชีผู้ดูแลนี้ถูกปิดใช้งาน','error');return;
+      }
+
+      location.replace('index.html');
+    }catch(err){show(err?.message||String(err));}
+    finally{btn.disabled=false;btn.textContent='เข้าสู่ระบบ';}
+  });
+})();
+</script>
+</body>
+</html>

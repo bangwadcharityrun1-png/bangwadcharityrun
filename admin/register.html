@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>TOP100 Admin - สมัครผู้ดูแล</title>
+  <link rel="stylesheet" href="../styles.css">
+  <style>
+    body{background:#f7f8fc;color:#111827;font-family:system-ui,-apple-system,"Segoe UI",sans-serif}
+    .auth-wrap{max-width:520px;margin:48px auto;padding:0 16px}
+    .auth-card{background:#fff;border:1px solid #e5e7eb;border-radius:22px;overflow:hidden;box-shadow:0 18px 42px rgba(15,23,42,.08)}
+    .auth-head{padding:25px;background:linear-gradient(135deg,#111827,#3b1765);color:#fff}
+    .auth-head h1{margin:0 0 6px;font-size:1.45rem}.auth-head p{margin:0;color:#d8dee9;line-height:1.55;font-size:.9rem}
+    .auth-body{padding:22px}.field{display:grid;gap:6px;margin-bottom:12px}.field label{font-size:.82rem;font-weight:850;color:#334155}
+    .field input{width:100%;box-sizing:border-box;border:1px solid #d8dde7;border-radius:12px;padding:12px;font-size:16px;min-height:46px}
+    .action{width:100%;min-height:50px;border:0;border-radius:13px;background:#111827;color:#fff;font-weight:900;cursor:pointer}
+    .notice,.success,.error{padding:12px 13px;border-radius:12px;margin-bottom:14px;line-height:1.5;font-size:.86rem}.notice{background:#f5f3ff;border:1px solid #ddd6fe;color:#5b21b6}.success{background:#ecfdf5;border:1px solid #a7f3d0;color:#047857}.error{background:#fef2f2;border:1px solid #fecaca;color:#b91c1c}
+    .link{text-align:center;margin-top:15px;font-size:.86rem}.link a{color:#6d28d9;font-weight:850;text-decoration:none}
+  </style>
+</head>
+<body>
+  <main class="auth-wrap">
+    <section class="auth-card">
+      <div class="auth-head">
+        <h1>สมัครบัญชีผู้ดูแลระบบ</h1>
+        <p>สมัครบัญชีก่อน จากนั้นรอ Superadmin เลือกสิทธิ์และอนุมัติ</p>
+      </div>
+      <div class="auth-body">
+        <div class="notice">บัญชีที่สมัครจากหน้านี้ <strong>ยังเข้า Admin ไม่ได้ทันที</strong> จนกว่า Superadmin จะอนุมัติและกำหนด Role ให้</div>
+        <div id="msg"></div>
+        <form id="registerForm">
+          <div class="field"><label>ชื่อที่แสดง</label><input id="displayName" required autocomplete="name" placeholder="ชื่อผู้ดูแล"></div>
+          <div class="field"><label>Email</label><input id="email" type="email" required autocomplete="email" placeholder="staff@example.com"></div>
+          <div class="field"><label>Password</label><input id="password" type="password" minlength="8" required autocomplete="new-password" placeholder="อย่างน้อย 8 ตัวอักษร"></div>
+          <div class="field"><label>ยืนยัน Password</label><input id="password2" type="password" minlength="8" required autocomplete="new-password"></div>
+          <button class="action" id="submitBtn" type="submit">สมัครบัญชีผู้ดูแล</button>
+        </form>
+        <div class="link">มีบัญชีแล้ว? <a href="login.html">เข้าสู่ระบบ</a></div>
+      </div>
+    </section>
+  </main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../config.js"></script>
+<script src="../js/app.js"></script>
+<script>
+(async()=>{
+  const $=s=>document.querySelector(s);
+  const form=$('#registerForm'),btn=$('#submitBtn'),msg=$('#msg');
+  const show=(text,type='error')=>{msg.innerHTML=`<div class="${type}">${APP.esc(text)}</div>`};
+
+  form.addEventListener('submit',async e=>{
+    e.preventDefault();msg.innerHTML='';
+    const displayName=$('#displayName').value.trim();
+    const email=$('#email').value.trim().toLowerCase();
+    const password=$('#password').value;
+    const password2=$('#password2').value;
+    if(password.length<8)return show('Password ต้องมีอย่างน้อย 8 ตัวอักษร');
+    if(password!==password2)return show('Password ทั้งสองช่องไม่ตรงกัน');
+
+    btn.disabled=true;btn.textContent='กำลังสมัคร...';
+    try{
+      const {data,error}=await sb.auth.signUp({
+        email,password,
+        options:{data:{display_name:displayName,admin_access_request:true}}
+      });
+      if(error)throw error;
+
+      if(data.session){
+        const {error:reqError}=await sb.rpc('request_admin_access',{p_display_name:displayName});
+        if(reqError)throw reqError;
+        await sb.auth.signOut();
+        form.style.display='none';
+        show('สมัครเรียบร้อยแล้ว • บัญชีอยู่ในสถานะรอ Superadmin อนุมัติ','success');
+      }else{
+        form.style.display='none';
+        show('สร้างบัญชีแล้ว กรุณายืนยัน Email หากระบบส่งอีเมลยืนยัน จากนั้นรอ Superadmin อนุมัติสิทธิ์','success');
+      }
+    }catch(err){
+      show(err?.message||String(err));
+    }finally{
+      btn.disabled=false;btn.textContent='สมัครบัญชีผู้ดูแล';
+    }
+  });
+})();
+</script>
+</body>
+</html>
