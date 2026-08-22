@@ -77,6 +77,17 @@
     .save-card-btn:disabled,.share-card-btn:disabled{opacity:.58;cursor:not-allowed}
     .save-hint{text-align:center;color:#64748b;font-size:.76rem;line-height:1.45;margin-top:8px}
     .capture-brand{font-size:.72rem;color:#94a3b8;text-align:center;margin-top:14px;font-weight:800;letter-spacing:.06em}
+    .save-image-overlay{display:none;position:fixed;inset:0;z-index:99999;background:rgba(15,23,42,.94);padding:14px;overflow:auto;-webkit-overflow-scrolling:touch}
+    .save-image-overlay.show{display:block}
+    .save-image-dialog{width:min(560px,100%);margin:0 auto;background:#fff;border-radius:20px;padding:14px;box-shadow:0 24px 70px rgba(0,0,0,.35)}
+    .save-image-dialog h2{margin:4px 0 6px;text-align:center;font-size:1.08rem}
+    .save-image-dialog p{margin:0 0 12px;text-align:center;color:#64748b;font-size:.86rem;line-height:1.55}
+    .save-image-preview{display:block;width:100%;height:auto;background:#fff;border:1px solid #e5e7eb;border-radius:14px;-webkit-touch-callout:default;user-select:auto}
+    .save-image-actions{display:grid;grid-template-columns:1fr;gap:8px;margin-top:12px}
+    .save-image-actions button,.save-image-actions a{min-height:48px;border-radius:13px;padding:12px 14px;text-align:center;font-weight:900;text-decoration:none;cursor:pointer}
+    .save-image-close{border:1px solid #d8dde7;background:#fff;color:#111827}
+    .save-image-external{border:0;background:#111827;color:#fff}
+    .inapp-warning{margin-top:10px;padding:11px 12px;border-radius:12px;background:#fff7ed;border:1px solid #fed7aa;color:#9a3412;font-size:.78rem;line-height:1.5;text-align:center}
 
     @media(max-width:560px){
       .container{padding-left:10px;padding-right:10px}
@@ -143,6 +154,19 @@
   </section>
 </main>
 
+<div class="save-image-overlay" id="saveImageOverlay" role="dialog" aria-modal="true" aria-hidden="true">
+  <div class="save-image-dialog">
+    <h2 id="saveImageTitle">บันทึกบัตรผู้เข้าแข่งขัน</h2>
+    <p id="saveImageInstruction">กดค้างที่รูปด้านล่าง แล้วเลือก “บันทึกรูปภาพ”</p>
+    <img id="saveImagePreview" class="save-image-preview" alt="Participant card">
+    <div class="inapp-warning" id="saveImageWarning"></div>
+    <div class="save-image-actions">
+      <a class="save-image-external" id="openExternalBrowser" href="#" style="display:none">เปิดใน Safari / Chrome</a>
+      <button class="save-image-close" id="closeSaveImage" type="button">ปิด</button>
+    </div>
+  </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="config.js"></script>
 <script src="js/app.js"></script>
@@ -177,6 +201,11 @@
       saving:'กำลังสร้างรูป...',
       sharing:'กำลังเตรียมแชร์...',
       saveHint:'กด “บันทึกลงเครื่อง” เพื่อดาวน์โหลดบัตรเป็นไฟล์ PNG โดยตรง',
+      inAppSaveTitle:'บันทึกบัตรผู้เข้าแข่งขัน',
+      inAppSaveInstruction:'กดค้างที่รูปด้านล่าง แล้วเลือก “บันทึกรูปภาพ”',
+      inAppSaveWarning:'LINE/Facebook อาจไม่อนุญาตให้เว็บไซต์ดาวน์โหลดไฟล์โดยตรง จึงแสดงรูปจริงให้บันทึกจากภาพแทน',
+      openExternal:'เปิดใน Safari / Chrome',
+      close:'ปิด',
       shareUnavailable:'อุปกรณ์หรือเบราว์เซอร์นี้ไม่รองรับการแชร์ไฟล์',
       saveFailed:'ไม่สามารถบันทึกรูปได้ กรุณาลองใหม่อีกครั้ง',
       noBib:'อนุมัติแล้วแต่ยังไม่พบเลข BIB กรุณาติดต่อเจ้าหน้าที่',
@@ -209,6 +238,11 @@
       saving:'Creating image...',
       sharing:'Preparing to share...',
       saveHint:'Tap “Save to device” to download the participant card directly as a PNG file.',
+      inAppSaveTitle:'Save participant card',
+      inAppSaveInstruction:'Press and hold the image below, then choose “Save Image”.',
+      inAppSaveWarning:'LINE/Facebook may block direct file downloads, so the actual card image is shown here for saving.',
+      openExternal:'Open in Safari / Chrome',
+      close:'Close',
       shareUnavailable:'This device or browser does not support file sharing.',
       saveFailed:'Could not save the image. Please try again.',
       noBib:'Approved, but no BIB number was found. Please contact staff.',
@@ -241,6 +275,11 @@
       saving:'正在生成图片...',
       sharing:'正在准备分享...',
       saveHint:'点击“保存到设备”可直接下载 PNG 格式的参赛卡。',
+      inAppSaveTitle:'保存参赛卡',
+      inAppSaveInstruction:'长按下面的图片，然后选择“保存图片”。',
+      inAppSaveWarning:'LINE/Facebook 可能会阻止网页直接下载文件，因此这里显示实际参赛卡图片供您保存。',
+      openExternal:'在 Safari / Chrome 中打开',
+      close:'关闭',
       shareUnavailable:'此设备或浏览器不支持文件分享。',
       saveFailed:'无法保存图片，请重试。',
       noBib:'报名已批准，但未找到 BIB 号码，请联系工作人员。',
@@ -273,6 +312,11 @@
       saving:'Создаем изображение...',
       sharing:'Подготавливаем файл...',
       saveHint:'Нажмите «Сохранить на устройство», чтобы напрямую скачать карточку в формате PNG.',
+      inAppSaveTitle:'Сохранить карточку участника',
+      inAppSaveInstruction:'Нажмите и удерживайте изображение ниже, затем выберите «Сохранить изображение».',
+      inAppSaveWarning:'LINE/Facebook могут блокировать прямую загрузку файлов, поэтому здесь показано само изображение карточки для сохранения.',
+      openExternal:'Открыть в Safari / Chrome',
+      close:'Закрыть',
       shareUnavailable:'Это устройство или браузер не поддерживает отправку файлов.',
       saveFailed:'Не удалось сохранить изображение. Попробуйте еще раз.',
       noBib:'Регистрация одобрена, но номер BIB не найден. Обратитесь к сотрудникам.',
@@ -285,6 +329,49 @@
   if(!t[lang])lang='th';
 
   const esc=v=>APP.esc(v==null?'':String(v));
+
+  const ua=navigator.userAgent||'';
+  const isLineInApp=/\bLine\//i.test(ua) || /\bLINE\b/i.test(ua);
+  const isFacebookInApp=/FBAN|FBAV|FB_IAB|\[FB/i.test(ua);
+  const isInstagramInApp=/Instagram/i.test(ua);
+  const isSocialInApp=isLineInApp||isFacebookInApp||isInstagramInApp;
+
+  function externalBrowserUrl(){
+    try{
+      const u=new URL(location.href);
+      u.searchParams.set('openExternalBrowser','1');
+      return u.toString();
+    }catch{
+      return location.href+(location.href.includes('?')?'&':'?')+'openExternalBrowser=1';
+    }
+  }
+
+  function closeSaveImageOverlay(){
+    const overlay=$('#saveImageOverlay');
+    if(!overlay)return;
+    overlay.classList.remove('show');
+    overlay.setAttribute('aria-hidden','true');
+    $('#saveImagePreview')?.removeAttribute('src');
+  }
+
+  function showSaveImageOverlay(dataUrl){
+    const overlay=$('#saveImageOverlay');
+    const preview=$('#saveImagePreview');
+    const external=$('#openExternalBrowser');
+    if(!overlay||!preview)return;
+    $('#saveImageTitle').textContent=t[lang].inAppSaveTitle;
+    $('#saveImageInstruction').textContent=t[lang].inAppSaveInstruction;
+    $('#saveImageWarning').textContent=t[lang].inAppSaveWarning;
+    $('#closeSaveImage').textContent=t[lang].close;
+    preview.src=dataUrl;
+    if(external){
+      external.textContent=t[lang].openExternal;
+      if(isLineInApp){external.href=externalBrowserUrl();external.style.display='block';}
+      else external.style.display='none';
+    }
+    overlay.classList.add('show');
+    overlay.setAttribute('aria-hidden','false');
+  }
 
   function applyLang(){
     document.documentElement.lang=lang;
@@ -312,6 +399,14 @@
     if(qrCaption) qrCaption.textContent=t[lang].qrCaption;
     if(approvedNote) approvedNote.textContent=t[lang].approvedNote;
     if(captureBrand) captureBrand.textContent=t[lang].brand;
+    if($('#saveImageOverlay')?.classList.contains('show')){
+      $('#saveImageTitle').textContent=t[lang].inAppSaveTitle;
+      $('#saveImageInstruction').textContent=t[lang].inAppSaveInstruction;
+      $('#saveImageWarning').textContent=t[lang].inAppSaveWarning;
+      $('#closeSaveImage').textContent=t[lang].close;
+      const external=$('#openExternalBrowser'); if(external)external.textContent=t[lang].openExternal;
+    }
+    if(isSocialInApp && saveHint)saveHint.textContent=t[lang].inAppSaveInstruction;
   }
 
   function statusText(status){
@@ -474,12 +569,14 @@
     ctx.font='800 20px system-ui,-apple-system,Segoe UI,sans-serif';
     ctx.fillText(t[lang].brand,540,1455);
 
+    const dataUrl=canvas.toDataURL('image/png',1);
     const blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/png',1));
     if(!blob)throw new Error('PNG creation failed');
 
     const safeBib=String(bib).replace(/[^A-Za-z0-9_-]/g,'_');
     return {
       blob,
+      dataUrl,
       safeBib,
       file:new File([blob],`${safeBib}.png`,{type:'image/png'})
     };
@@ -494,7 +591,11 @@
     btn.textContent=t[lang].saving;
 
     try{
-      const {blob,safeBib}=await participantCardPng(bib);
+      const {blob,dataUrl,safeBib}=await participantCardPng(bib);
+      if(isSocialInApp){
+        showSaveImageOverlay(dataUrl);
+        return;
+      }
       const url=URL.createObjectURL(blob);
       const a=document.createElement('a');
       a.href=url;
@@ -608,7 +709,7 @@
       <button class="share-card-btn" id="shareParticipantCard" type="button">
         ${esc(t[lang].share)}
       </button>
-      <div class="save-hint">${esc(t[lang].saveHint)}</div>
+      <div class="save-hint">${esc(isSocialInApp?t[lang].inAppSaveInstruction:t[lang].saveHint)}</div>
     `;
   }
 
@@ -686,6 +787,9 @@
       $('#check').disabled=false;
     }
   }
+
+  $('#closeSaveImage')?.addEventListener('click',closeSaveImageOverlay);
+  $('#saveImageOverlay')?.addEventListener('click',e=>{if(e.target===e.currentTarget)closeSaveImageOverlay();});
 
   $('#lang').addEventListener('change',e=>{
     lang=e.target.value;
