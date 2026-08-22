@@ -81,12 +81,13 @@
       const userId=row.dataset.user;
       const u=rows.find(x=>x.user_id===userId);
       row.querySelector('[data-approve]')?.addEventListener('click',async e=>{
+        const button=e.currentTarget;
         const role=row.querySelector('[data-role]')?.value;
         if(!role)return ADMIN.toast('กรุณาเลือก Role ก่อนอนุมัติ','error');
         const yes=await Swal.fire({icon:'question',title:'อนุมัติผู้ดูแล?',html:`<b>${APP.esc(u.email||'')}</b><br>Role: <b>${APP.esc(role)}</b>`,showCancelButton:true,confirmButtonText:'อนุมัติ',cancelButtonText:'ยกเลิก'});
         if(!yes.isConfirmed)return;
-        e.currentTarget.disabled=true;
-        try{await rpc('admin_approve_user',{p_user_id:userId,p_role:role});ADMIN.toast('อนุมัติผู้ดูแลแล้ว');await load();}catch(err){ADMIN.toast(err.message,'error');e.currentTarget.disabled=false;}
+        button.disabled=true;
+        try{await rpc('admin_approve_user',{p_user_id:userId,p_role:role});ADMIN.toast('อนุมัติผู้ดูแลแล้ว');await load();}catch(err){ADMIN.toast(err.message,'error');button.disabled=false;}
       });
       row.querySelector('[data-reject]')?.addEventListener('click',async()=>{
         const yes=await Swal.fire({icon:'warning',title:'ปฏิเสธคำขอ?',text:u.email||'',showCancelButton:true,confirmButtonText:'ปฏิเสธ',cancelButtonText:'ยกเลิก',confirmButtonColor:'#b91c1c'});
@@ -97,11 +98,12 @@
         try{await rpc('admin_reopen_user',{p_user_id:userId});ADMIN.toast('คืนบัญชีเป็นรออนุมัติแล้ว');await load();}catch(err){ADMIN.toast(err.message,'error');}
       });
       row.querySelector('[data-save]')?.addEventListener('click',async e=>{
+        const button=e.currentTarget;
         const role=row.querySelector('[data-role]')?.value;
         const active=Boolean(row.querySelector('[data-active]')?.checked);
         if(!role)return ADMIN.toast('กรุณาเลือก Role','error');
-        e.currentTarget.disabled=true;
-        try{await rpc('admin_update_user',{p_user_id:userId,p_role:role,p_is_active:active});ADMIN.toast('บันทึกสิทธิ์แล้ว');await load();}catch(err){ADMIN.toast(err.message,'error');e.currentTarget.disabled=false;}
+        button.disabled=true;
+        try{await rpc('admin_update_user',{p_user_id:userId,p_role:role,p_is_active:active});ADMIN.toast('บันทึกสิทธิ์แล้ว');await load();}catch(err){ADMIN.toast(err.message,'error');button.disabled=false;}
       });
     });
   }
