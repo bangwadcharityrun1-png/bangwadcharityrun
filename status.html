@@ -297,6 +297,23 @@
     $('#document').placeholder=t[lang].placeholder;
     $('#check').textContent=t[lang].check;
     $('#privacy').textContent=t[lang].privacy;
+
+    // ถ้าการ์ดผู้เข้าแข่งขันถูกแสดงอยู่แล้ว ให้เปลี่ยนภาษาทันที
+    const saveBtn=$('#saveParticipantCard');
+    const shareBtn=$('#shareParticipantCard');
+    const saveHint=document.querySelector('.save-hint');
+    const qrTitle=document.querySelector('.runner-card-head small');
+    const qrCaption=document.querySelector('.qr-caption');
+    const approvedNote=document.querySelector('.approved-note');
+    const captureBrand=document.querySelector('.capture-brand');
+
+    if(saveBtn && !saveBtn.disabled) saveBtn.textContent=t[lang].save;
+    if(shareBtn && !shareBtn.disabled) shareBtn.textContent=t[lang].share;
+    if(saveHint) saveHint.textContent=t[lang].saveHint;
+    if(qrTitle) qrTitle.textContent=t[lang].qrTitle;
+    if(qrCaption) qrCaption.textContent=t[lang].qrCaption;
+    if(approvedNote) approvedNote.textContent=t[lang].approvedNote;
+    if(captureBrand) captureBrand.textContent=t[lang].brand;
   }
 
   function statusText(status){
@@ -366,7 +383,7 @@
       alert(t[lang].saveFailed);
     }finally{
       btn.disabled=false;
-      btn.textContent=originalText;
+      btn.textContent=t[lang].save;
     }
   }
 
@@ -399,7 +416,7 @@
       if(e?.name!=='AbortError')alert(t[lang].saveFailed);
     }finally{
       btn.disabled=false;
-      btn.textContent=originalText;
+      btn.textContent=t[lang].share;
     }
   }
 
