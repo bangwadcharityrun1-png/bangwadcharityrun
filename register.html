@@ -209,6 +209,16 @@ el('#verify').onclick=async()=>{
   isVerifying=true;
   verifyBtn.disabled=true;
   verifyBtn.setAttribute('aria-busy','true');
+  verifyBtn.textContent=I18N.t('checking');
+
+  Swal.fire({
+    title:I18N.t('verifyLoadingTitle'),
+    text:I18N.t('verifyLoadingHint'),
+    allowOutsideClick:false,
+    allowEscapeKey:false,
+    showConfirmButton:false,
+    didOpen:()=>Swal.showLoading()
+  });
 
   try{
     el('#slipStatus').innerHTML=`<div class="notice">${I18N.t('checking')}</div>`;
@@ -226,6 +236,7 @@ el('#verify').onclick=async()=>{
       const message=found!==null
         ? localSlipText('ocrMismatch',{found:Number(found).toFixed(2),expected:expectedAmount.toFixed(2)})
         : localSlipText('ocrMismatchUnknown',{expected:expectedAmount.toFixed(2)});
+      Swal.close();
       el('#slipStatus').innerHTML=`<div class="error">${APP.esc(message)}</div>`;
       return;
     }
@@ -252,6 +263,7 @@ el('#verify').onclick=async()=>{
     if(!data?.ok)throw new Error(data?.message||'Verification failed');
 
     verificationToken=data.verification_token;
+    Swal.close();
     const ref=data.trans_ref?` • Ref: ${APP.esc(data.trans_ref)}`:'';
     const bank=data.sending_bank?` • Bank: ${APP.esc(data.sending_bank)}`:'';
     const amount=` • ${Number(data.screened_amount).toFixed(2)} THB`;
@@ -261,12 +273,14 @@ el('#verify').onclick=async()=>{
     el('#slipStatus').innerHTML=
       `<div class="success">${APP.esc(localSlipText('ocrMatched',{expected:expectedAmount.toFixed(2)}))}${bank}${ref}${amount}<br>${APP.esc(localSlipText('screened'))}${resumed}</div>`;
   }catch(e){
+    Swal.close();
     el('#slipStatus').innerHTML=`<div class="error">${APP.esc(e.message)}</div>`;
   }finally{
+    Swal.close();
     isVerifying=false;
     verifyBtn.disabled=false;
     verifyBtn.removeAttribute('aria-busy');
-    verifyBtn.textContent=originalVerifyText;
+    verifyBtn.textContent=I18N.t('verifySlip');
   }
 };
 let isSubmitting=false;
