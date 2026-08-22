@@ -10,6 +10,9 @@
     .detail-grid div{padding:10px 12px;border:1px solid #e5e7eb;border-radius:12px;background:#fafafa}
     .detail-grid strong{display:block;font-size:.76rem;color:#64748b;margin-bottom:4px}
     .action-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+    .export-tools{display:flex;gap:8px;align-items:end;flex-wrap:wrap}
+    .export-tools .field{min-width:190px}
+    .export-tools select{min-height:42px}
     tr.focused{outline:2px solid #8b5cf6;outline-offset:-2px;background:#faf5ff}
     @media(max-width:600px){.detail-grid{grid-template-columns:1fr}}
   </style>
@@ -43,7 +46,17 @@
           <h1>อนุมัติผู้สมัคร</h1>
           <p class="muted">เปิดข้อมูล/สลิป ตรวจเงินจริง แล้วอนุมัติหรือไม่อนุมัติ</p>
         </div>
-        <button class="btn btn-dark hidden" id="exportApproved">Export Excel ผู้อนุมัติแล้ว</button>
+        <div class="export-tools hidden" id="exportTools">
+          <div class="field">
+            <label>กรองก่อน Export</label>
+            <select id="exportCategory">
+              <option value="">ทั้งหมด</option>
+              <option value="TOP100MEN">ชาย • TOP100MEN</option>
+              <option value="TOP100WOMEN">หญิง • TOP100WOMEN</option>
+            </select>
+          </div>
+          <button class="btn btn-dark" id="exportApproved">Export Excel ผู้อนุมัติแล้ว</button>
+        </div>
       </div>
 
       <div id="adminMsg"></div>
@@ -115,7 +128,7 @@
   }
 
   let reviewBusy=false;
-  if(canExport)$('#exportApproved').classList.remove('hidden');
+  if(canExport)$('#exportTools').classList.remove('hidden');
 
   async function load(){
     const {data,error}=await sb
@@ -348,9 +361,15 @@
 
       const {data,error}=await sb.rpc('export_approved_registrations',{p_event_id:e.id});
       if(error)throw error;
-      const rows=Array.isArray(data)?data:[];
+      const allRows=Array.isArray(data)?data:[];
+      const category=$('#exportCategory').value;
+      const rows=category
+        ? allRows.filter(r=>String(r.category_code||'').toUpperCase()===category)
+        : allRows;
+
       if(!rows.length){
-        await Swal.fire({icon:'info',title:'ยังไม่มีข้อมูล',text:'ยังไม่มีผู้สมัครที่ได้รับการอนุมัติสำหรับ Export',confirmButtonText:'ตกลง'});
+        const label=category==='TOP100MEN'?'ชาย TOP100MEN':category==='TOP100WOMEN'?'หญิง TOP100WOMEN':'ทั้งหมด';
+        await Swal.fire({icon:'info',title:'ยังไม่มีข้อมูล',text:`ยังไม่มีผู้สมัครที่ได้รับการอนุมัติในกลุ่ม ${label}`,confirmButtonText:'ตกลง'});
         return;
       }
 
@@ -402,9 +421,12 @@
       XLSX.utils.book_append_sheet(wb,ws,'Approved Applicants');
       const now=new Date();
       const pad=n=>String(n).padStart(2,'0');
-      const filename=`TOP100-approved-${now.getFullYear()}${pad(now.getMonth()+1)}${pad(now.getDate())}-${pad(now.getHours())}${pad(now.getMinutes())}.xlsx`;
+      const category=$('#exportCategory').value;
+      const categorySlug=category==='TOP100MEN'?'MEN':category==='TOP100WOMEN'?'WOMEN':'ALL';
+      const filename=`TOP100-approved-${categorySlug}-${now.getFullYear()}${pad(now.getMonth()+1)}${pad(now.getDate())}-${pad(now.getHours())}${pad(now.getMinutes())}.xlsx`;
       XLSX.writeFile(wb,filename,{compression:true});
-      ADMIN.toast(`Export สำเร็จ ${rows.length} รายการ`);
+      const label=category==='TOP100MEN'?'ชาย TOP100MEN':category==='TOP100WOMEN'?'หญิง TOP100WOMEN':'ทั้งหมด';
+      ADMIN.toast(`Export ${label} สำเร็จ ${rows.length} รายการ`);
     }catch(err){
       console.error(err);
       ADMIN.toast(err.message||'Export Excel ไม่สำเร็จ','error');
