@@ -1,5 +1,5 @@
 <!doctype html><html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Registration • TOP100</title><link rel="stylesheet" href="styles.css"></head><body><header class="topbar"><div class="inner"><a class="brand" href="index.html">TOP100 CHARITY RUN</a><select class="lang-select" data-lang-select><option value="th">🇹🇭 ไทย</option><option value="en">🇬🇧 English</option><option value="zh">🇨🇳 中文</option><option value="ru">🇷🇺 Русский</option></select></div></header><main class="container"><section class="panel"><div class="panel-head"><h1 data-i18n="form">ฟอร์มสมัคร</h1><p id="subtitle"></p></div><div class="panel-body"><div id="message"></div><form id="form" novalidate><section class="form-section"><h3 data-i18n="category">ประเภทการแข่งขัน</h3><div class="choice" id="categories"></div></section><section class="form-section"><h3 data-i18n="applicant">ข้อมูลผู้สมัคร</h3><div class="form-grid"><div class="field"><label data-i18n="docType">ประเภทเอกสาร</label><select id="documentType"><option value="thai_id" data-i18n="thaiId">บัตรประชาชนไทย</option><option value="passport" data-i18n="passport">Passport</option></select></div><div class="field"><label id="documentLabel" data-i18n="thaiId">บัตรประชาชนไทย</label><input id="documentNo" autocomplete="off" maxlength="13" inputmode="numeric" required><small class="muted" id="documentHint"></small></div><div class="field"><label data-i18n="first">ชื่อ</label><input id="firstName" required></div><div class="field"><label data-i18n="last">นามสกุล</label><input id="lastName" required></div><div class="field"><label data-i18n="dob">วันเกิด</label><input id="birthDate" type="date" required></div><div class="field"><label data-i18n="phone">เบอร์โทรศัพท์</label><input id="phone" type="tel" required></div><div class="field full"><label data-i18n="email">อีเมล</label><input id="email" type="email"></div></div><div id="dynamicFields" class="form-grid" style="margin-top:12px"></div></section><section class="form-section"><h3 data-i18n="slip">สลิปการชำระเงิน</h3><div class="upload"><input type="file" id="slip" accept=".jpg,.jpeg,.png,image/jpeg,image/png" required><p class="muted" id="slipHelp"></p><button type="button" class="btn btn-dark" id="verify" data-i18n="verifySlip">ตรวจสอบสลิป</button></div><div id="slipStatus" style="margin-top:10px"></div></section><label class="check"><input type="checkbox" id="terms" required><span data-i18n="terms">ยืนยันว่าข้อมูลถูกต้องและยอมรับเงื่อนไข</span></label><button class="btn btn-primary" id="submitRegistration" type="submit" style="width:100%;margin-top:14px" data-i18n="submit">ยืนยันการสมัคร</button></form></div></section></main><script src="https://cdn.jsdelivr.net/npm/tesseract.js@7.0.0/dist/tesseract.min.js"></script><script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script><script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="config.js"></script><script src="js/app.js"></script><script src="js/i18n.js"></script><script>
-let eventData,cats=[],fields=[],selectedCategory=null,verificationToken=null;const el=s=>document.querySelector(s),msg=el('#message');
+let eventData,cats=[],fields=[],selectedCategory=null,verificationToken=null,isVerifying=false;const el=s=>document.querySelector(s),msg=el('#message');
 function thaiIdValid(v){v=String(v).replace(/\D/g,'');if(!/^\d{13}$/.test(v)||/^(\d)\1{12}$/.test(v))return false;let sum=0;for(let i=0;i<12;i++)sum+=Number(v[i])*(13-i);return(11-(sum%11))%10===Number(v[12])}
 function passportValid(v){v=String(v).trim().toUpperCase();return /^[A-Z0-9]{6,12}$/.test(v)&&/[A-Z]/.test(v)&&/\d/.test(v)&&!(/^(.)\1+$/.test(v))}
 function renderCategories(){el('#categories').innerHTML=cats.map(c=>`<button type="button" data-id="${c.id}" class="${selectedCategory===c.id?'active':''}">${APP.esc(APP.pick(c.name_i18n,I18N.lang)||c.code)}</button>`).join('');el('#categories').querySelectorAll('button').forEach(b=>b.onclick=()=>{selectedCategory=b.dataset.id;renderCategories()})}
@@ -178,7 +178,11 @@ async function readExpectedAmountFromSlip(file,expected){
 }
 
 el('#verify').onclick=async()=>{
+  if(isVerifying)return;
+
   verificationToken=null;
+  const verifyBtn=el('#verify');
+  const originalVerifyText=verifyBtn.textContent;
   const file=el('#slip').files[0];
   if(!file){
     el('#slipStatus').innerHTML=`<div class="error">${I18N.t('slipRequired')}</div>`;
@@ -201,6 +205,10 @@ el('#verify').onclick=async()=>{
     el('#slipStatus').innerHTML='<div class="error">ไม่พบค่าสมัครที่ถูกต้องในระบบ</div>';
     return;
   }
+
+  isVerifying=true;
+  verifyBtn.disabled=true;
+  verifyBtn.setAttribute('aria-busy','true');
 
   try{
     el('#slipStatus').innerHTML=`<div class="notice">${I18N.t('checking')}</div>`;
@@ -247,10 +255,18 @@ el('#verify').onclick=async()=>{
     const ref=data.trans_ref?` • Ref: ${APP.esc(data.trans_ref)}`:'';
     const bank=data.sending_bank?` • Bank: ${APP.esc(data.sending_bank)}`:'';
     const amount=` • ${Number(data.screened_amount).toFixed(2)} THB`;
+    const resumed=data.resumed===true
+      ? `<br><strong>${APP.esc(I18N.lang==='th'?'พบสลิปที่เคยตรวจผ่านแล้ว สามารถใช้สมัครต่อได้':I18N.lang==='en'?'Previously screened slip found. You can continue registration.':I18N.lang==='zh'?'已找到之前通过检查的付款凭证，可以继续报名。':'Найден ранее проверенный чек. Можно продолжить регистрацию.')}</strong>`
+      : '';
     el('#slipStatus').innerHTML=
-      `<div class="success">${APP.esc(localSlipText('ocrMatched',{expected:expectedAmount.toFixed(2)}))}${bank}${ref}${amount}<br>${APP.esc(localSlipText('screened'))}</div>`;
+      `<div class="success">${APP.esc(localSlipText('ocrMatched',{expected:expectedAmount.toFixed(2)}))}${bank}${ref}${amount}<br>${APP.esc(localSlipText('screened'))}${resumed}</div>`;
   }catch(e){
     el('#slipStatus').innerHTML=`<div class="error">${APP.esc(e.message)}</div>`;
+  }finally{
+    isVerifying=false;
+    verifyBtn.disabled=false;
+    verifyBtn.removeAttribute('aria-busy');
+    verifyBtn.textContent=originalVerifyText;
   }
 };
 let isSubmitting=false;
