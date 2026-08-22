@@ -47,7 +47,7 @@
       display:grid;
       place-items:center
     }
-    .bib-qr img{display:block;width:100%;height:100%;object-fit:contain}
+    .bib-qr img,.bib-qr svg{display:block;width:100%;height:100%;object-fit:contain}
     .qr-caption{text-align:center;color:#64748b;font-size:.8rem;line-height:1.5}
     .approved-note{margin-top:14px;background:#ecfdf5;border:1px solid #a7f3d0;color:#166534;border-radius:14px;padding:12px 14px;text-align:center;font-size:.86rem;font-weight:800;line-height:1.5}
     .save-card-btn{
@@ -143,8 +143,6 @@
   </section>
 </main>
 
-<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="config.js"></script>
 <script src="js/app.js"></script>
@@ -328,25 +326,153 @@
     $('#result').innerHTML=`<div class="error">${esc(message)}</div>`;
   }
 
-  function makeBibQrDataUrl(bib){
-    if(typeof qrcode!=='function')throw new Error('QR library unavailable');
-    const qr=qrcode(0,'M');
-    qr.addData(String(bib));
-    qr.make();
-    return qr.createDataURL(8,4);
+  let currentRegistration=null;
+
+  function validQrMatrix(matrix){
+    return Array.isArray(matrix) && matrix.length>=21 && matrix.length<=177 &&
+      matrix.every(row=>Array.isArray(row) && row.length===matrix.length && row.every(v=>v===0||v===1||v===true||v===false));
+  }
+
+  function qrSvgFromMatrix(matrix){
+    if(!validQrMatrix(matrix))throw new Error('QR matrix unavailable');
+    const size=matrix.length;
+    const quiet=4;
+    const total=size+(quiet*2);
+    let path='';
+    for(let y=0;y<size;y++){
+      for(let x=0;x<size;x++){
+        if(matrix[y][x])path+=`M${x+quiet} ${y+quiet}h1v1h-1z`;
+      }
+    }
+    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${total} ${total}" shape-rendering="crispEdges" role="img" aria-label="BIB QR Code"><rect width="100%" height="100%" fill="#fff"/><path d="${path}" fill="#000"/></svg>`;
+  }
+
+  function roundRect(ctx,x,y,w,h,r){
+    const rr=Math.min(r,w/2,h/2);
+    ctx.beginPath();
+    ctx.moveTo(x+rr,y);
+    ctx.arcTo(x+w,y,x+w,y+h,rr);
+    ctx.arcTo(x+w,y+h,x,y+h,rr);
+    ctx.arcTo(x,y+h,x,y,rr);
+    ctx.arcTo(x,y,x+w,y,rr);
+    ctx.closePath();
+  }
+
+  function fitText(ctx,text,maxWidth,startSize,minSize=24){
+    let size=startSize;
+    while(size>minSize){
+      ctx.font=`900 ${size}px system-ui,-apple-system,Segoe UI,sans-serif`;
+      if(ctx.measureText(text).width<=maxWidth)break;
+      size-=2;
+    }
+    return size;
+  }
+
+  function drawQrMatrix(ctx,matrix,x,y,sizePx){
+    if(!validQrMatrix(matrix))throw new Error('QR matrix unavailable');
+    const quiet=4;
+    const total=matrix.length+(quiet*2);
+    const cell=sizePx/total;
+    ctx.fillStyle='#fff';
+    ctx.fillRect(x,y,sizePx,sizePx);
+    ctx.fillStyle='#000';
+    for(let row=0;row<matrix.length;row++){
+      for(let col=0;col<matrix.length;col++){
+        if(matrix[row][col]){
+          const left=x+(col+quiet)*cell;
+          const top=y+(row+quiet)*cell;
+          ctx.fillRect(Math.floor(left),Math.floor(top),Math.ceil(cell)+0.25,Math.ceil(cell)+0.25);
+        }
+      }
+    }
   }
 
   async function participantCardPng(bib){
-    const card=$('#participantCard');
-    if(!card)throw new Error('Participant card not found');
-    if(typeof html2canvas!=='function')throw new Error('html2canvas unavailable');
+    const r=currentRegistration;
+    if(!r || !validQrMatrix(r.bib_qr_matrix))throw new Error('QR matrix unavailable');
 
-    const canvas=await html2canvas(card,{
-      backgroundColor:'#ffffff',
-      scale:Math.min(3,Math.max(2,window.devicePixelRatio||2)),
-      useCORS:true,
-      logging:false
-    });
+    const canvas=document.createElement('canvas');
+    canvas.width=1080;
+    canvas.height=1500;
+    const ctx=canvas.getContext('2d');
+    if(!ctx)throw new Error('Canvas unavailable');
+
+    ctx.fillStyle='#fff';
+    ctx.fillRect(0,0,canvas.width,canvas.height);
+
+    const grad=ctx.createLinearGradient(0,0,1080,360);
+    grad.addColorStop(0,'#111827');
+    grad.addColorStop(1,'#3b1765');
+    ctx.fillStyle=grad;
+    ctx.fillRect(0,0,1080,360);
+
+    ctx.textAlign='center';
+    ctx.fillStyle='rgba(255,255,255,.82)';
+    ctx.font='800 30px system-ui,-apple-system,Segoe UI,sans-serif';
+    ctx.fillText(t[lang].qrTitle,540,92);
+
+    ctx.fillStyle='#fff';
+    const bibSize=fitText(ctx,String(bib),900,84,52);
+    ctx.font=`1000 ${bibSize}px system-ui,-apple-system,Segoe UI,sans-serif`;
+    ctx.fillText(String(bib),540,205);
+
+    const fullName=((r.first_name||'')+' '+(r.last_name||'')).trim();
+    ctx.fillStyle='#111827';
+    const nameSize=fitText(ctx,fullName,900,48,30);
+    ctx.font=`900 ${nameSize}px system-ui,-apple-system,Segoe UI,sans-serif`;
+    ctx.fillText(fullName,540,435);
+
+    ctx.fillStyle='#64748b';
+    ctx.font='800 32px system-ui,-apple-system,Segoe UI,sans-serif';
+    ctx.fillText(r.category||'-',540,492);
+
+    const qrSize=520;
+    const qrX=(1080-qrSize)/2;
+    const qrY=555;
+    ctx.fillStyle='#fff';
+    roundRect(ctx,qrX-20,qrY-20,qrSize+40,qrSize+40,32);
+    ctx.fill();
+    ctx.strokeStyle='#d8dde7';
+    ctx.lineWidth=3;
+    ctx.stroke();
+    drawQrMatrix(ctx,r.bib_qr_matrix,qrX,qrY,qrSize);
+
+    ctx.fillStyle='#64748b';
+    ctx.font='600 25px system-ui,-apple-system,Segoe UI,sans-serif';
+    ctx.fillText(t[lang].qrCaption,540,1140);
+
+    const left=105;
+    const right=975;
+    ctx.textAlign='left';
+    ctx.fillStyle='#64748b';
+    ctx.font='700 24px system-ui,-apple-system,Segoe UI,sans-serif';
+    ctx.fillText(t[lang].appNo, left, 1218);
+    ctx.textAlign='right';
+    ctx.fillStyle='#111827';
+    ctx.font='900 27px system-ui,-apple-system,Segoe UI,sans-serif';
+    ctx.fillText(r.application_no||'-', right, 1218);
+
+    ctx.textAlign='left';
+    ctx.fillStyle='#64748b';
+    ctx.font='700 24px system-ui,-apple-system,Segoe UI,sans-serif';
+    ctx.fillText(t[lang].bib, left, 1270);
+    ctx.textAlign='right';
+    ctx.fillStyle='#111827';
+    ctx.font='900 27px system-ui,-apple-system,Segoe UI,sans-serif';
+    ctx.fillText(String(bib), right, 1270);
+
+    ctx.textAlign='center';
+    ctx.fillStyle='#166534';
+    roundRect(ctx,105,1320,870,82,22);
+    ctx.fillStyle='#ecfdf5';
+    ctx.fill();
+    ctx.fillStyle='#166534';
+    ctx.font='800 24px system-ui,-apple-system,Segoe UI,sans-serif';
+    ctx.fillText(t[lang].approved,540,1371);
+
+    ctx.fillStyle='#94a3b8';
+    ctx.font='800 20px system-ui,-apple-system,Segoe UI,sans-serif';
+    ctx.fillText(t[lang].brand,540,1455);
 
     const blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/png',1));
     if(!blob)throw new Error('PNG creation failed');
@@ -427,9 +553,9 @@
       return `<div class="error" style="margin-top:12px">${esc(t[lang].noBib)}</div>`;
     }
 
-    let qrData='';
+    let qrSvg='';
     try{
-      qrData=makeBibQrDataUrl(bib);
+      qrSvg=qrSvgFromMatrix(r.bib_qr_matrix);
     }catch(e){
       console.error(e);
       return `<div class="error" style="margin-top:12px">QR Code error</div>`;
@@ -447,7 +573,7 @@
           <div class="runner-category">${esc(r.category||'-')}</div>
 
           <div class="bib-qr">
-            <img src="${qrData}" alt="QR ${esc(bib)}">
+            ${qrSvg}
           </div>
 
           <div class="qr-caption">${esc(t[lang].qrCaption)}</div>
@@ -506,6 +632,7 @@
       if(!data?.ok)throw new Error(data?.message||t[lang].invalid);
 
       if(!data.found){
+        currentRegistration=null;
         $('#result').innerHTML=`<div class="notice">${esc(t[lang].notFound)}</div>`;
         return;
       }
@@ -543,14 +670,17 @@
         </div>`;
 
       if(r.status==='approved'){
+        currentRegistration=r;
         const approvedCard=await renderApprovedCard(r);
         $('#result').innerHTML=base+approvedCard;
         $('#saveParticipantCard')?.addEventListener('click',()=>saveParticipantCard(r.bib_number));
         $('#shareParticipantCard')?.addEventListener('click',()=>shareParticipantCard(r.bib_number));
       }else{
+        currentRegistration=null;
         $('#result').innerHTML=base;
       }
     }catch(e){
+      currentRegistration=null;
       showError(e.message||t[lang].invalid);
     }finally{
       $('#check').disabled=false;
