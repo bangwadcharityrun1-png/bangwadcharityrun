@@ -88,6 +88,50 @@
     .save-image-close{border:1px solid #d8dde7;background:#fff;color:#111827}
     .save-image-external{border:0;background:#111827;color:#fff}
     .inapp-warning{margin-top:10px;padding:11px 12px;border-radius:12px;background:#fff7ed;border:1px solid #fed7aa;color:#9a3412;font-size:.78rem;line-height:1.5;text-align:center}
+    .external-browser-notice{
+      display:none;
+      margin-bottom:14px;
+      padding:14px;
+      border-radius:16px;
+      background:#fff7ed;
+      border:1px solid #fed7aa;
+      color:#9a3412;
+      line-height:1.55
+    }
+    .external-browser-notice.show{display:block}
+    .external-browser-notice strong{
+      display:block;
+      color:#7c2d12;
+      font-size:.95rem;
+      margin-bottom:4px
+    }
+    .external-browser-notice p{
+      margin:0;
+      font-size:.82rem
+    }
+    .external-browser-btn{
+      width:100%;
+      border:0;
+      border-radius:13px;
+      min-height:48px;
+      margin-top:11px;
+      padding:12px 14px;
+      background:#111827;
+      color:#fff;
+      font-weight:950;
+      cursor:pointer
+    }
+    .external-browser-help{
+      display:none;
+      margin-top:9px;
+      padding:10px 11px;
+      border-radius:12px;
+      background:#fff;
+      border:1px solid #fed7aa;
+      font-size:.78rem;
+      color:#9a3412
+    }
+    .external-browser-help.show{display:block}
 
     @media(max-width:560px){
       .container{padding-left:10px;padding-right:10px}
@@ -134,6 +178,13 @@
     </div>
 
     <div class="panel-body">
+      <div class="external-browser-notice" id="externalBrowserNotice">
+        <strong id="externalBrowserTitle">แนะนำให้เปิดด้วย Safari / Chrome</strong>
+        <p id="externalBrowserText">เพื่อให้แสดง QR Code และบันทึกบัตรผู้เข้าแข่งขันได้สมบูรณ์ แนะนำให้เปิดหน้านี้ด้วยเบราว์เซอร์ภายนอก</p>
+        <button class="external-browser-btn" id="externalBrowserBtn" type="button">เปิดด้วย Safari / Chrome</button>
+        <div class="external-browser-help" id="externalBrowserHelp"></div>
+      </div>
+
       <div class="form-section">
         <div class="field">
           <label id="docLabel" for="document">เลขบัตรประชาชน / Passport</label>
@@ -205,6 +256,12 @@
       inAppSaveInstruction:'กดค้างที่รูปด้านล่าง แล้วเลือก “บันทึกรูปภาพ”',
       inAppSaveWarning:'LINE/Facebook อาจไม่อนุญาตให้เว็บไซต์ดาวน์โหลดไฟล์โดยตรง จึงแสดงรูปจริงให้บันทึกจากภาพแทน',
       openExternal:'เปิดใน Safari / Chrome',
+      browserTitle:'แนะนำให้เปิดด้วย Safari / Chrome',
+      browserText:'เพื่อให้แสดง QR Code และบันทึกบัตรผู้เข้าแข่งขันได้สมบูรณ์ แนะนำให้เปิดหน้านี้ด้วยเบราว์เซอร์ภายนอก',
+      browserOpenIOS:'เปิดด้วย Safari / Chrome',
+      browserOpenAndroid:'เปิดด้วย Chrome',
+      browserHelpIOS:'หากไม่เปิดอัตโนมัติ ให้แตะเมนู ⋯ ของแอป แล้วเลือก “เปิดในเบราว์เซอร์” หรือ “เปิดใน Safari”',
+      browserHelpAndroid:'หาก Chrome ไม่เปิดอัตโนมัติ ให้แตะเมนู ⋯ ของแอป แล้วเลือก “เปิดในเบราว์เซอร์ภายนอก”',
       close:'ปิด',
       shareUnavailable:'อุปกรณ์หรือเบราว์เซอร์นี้ไม่รองรับการแชร์ไฟล์',
       saveFailed:'ไม่สามารถบันทึกรูปได้ กรุณาลองใหม่อีกครั้ง',
@@ -242,6 +299,12 @@
       inAppSaveInstruction:'Press and hold the image below, then choose “Save Image”.',
       inAppSaveWarning:'LINE/Facebook may block direct file downloads, so the actual card image is shown here for saving.',
       openExternal:'Open in Safari / Chrome',
+      browserTitle:'Open in Safari / Chrome recommended',
+      browserText:'For reliable QR display and participant-card saving, open this page in an external browser.',
+      browserOpenIOS:'Open in Safari / Chrome',
+      browserOpenAndroid:'Open in Chrome',
+      browserHelpIOS:'If it does not open automatically, tap the app’s ⋯ menu and choose “Open in browser” or “Open in Safari”.',
+      browserHelpAndroid:'If Chrome does not open automatically, tap the app’s ⋯ menu and choose “Open in external browser”.',
       close:'Close',
       shareUnavailable:'This device or browser does not support file sharing.',
       saveFailed:'Could not save the image. Please try again.',
@@ -279,6 +342,12 @@
       inAppSaveInstruction:'长按下面的图片，然后选择“保存图片”。',
       inAppSaveWarning:'LINE/Facebook 可能会阻止网页直接下载文件，因此这里显示实际参赛卡图片供您保存。',
       openExternal:'在 Safari / Chrome 中打开',
+      browserTitle:'建议使用 Safari / Chrome 打开',
+      browserText:'为确保二维码正常显示并顺利保存参赛卡，建议使用外部浏览器打开此页面。',
+      browserOpenIOS:'使用 Safari / Chrome 打开',
+      browserOpenAndroid:'使用 Chrome 打开',
+      browserHelpIOS:'如果没有自动打开，请点击应用的 ⋯ 菜单，然后选择“在浏览器中打开”或“在 Safari 中打开”。',
+      browserHelpAndroid:'如果 Chrome 没有自动打开，请点击应用的 ⋯ 菜单，然后选择“在外部浏览器中打开”。',
       close:'关闭',
       shareUnavailable:'此设备或浏览器不支持文件分享。',
       saveFailed:'无法保存图片，请重试。',
@@ -316,6 +385,12 @@
       inAppSaveInstruction:'Нажмите и удерживайте изображение ниже, затем выберите «Сохранить изображение».',
       inAppSaveWarning:'LINE/Facebook могут блокировать прямую загрузку файлов, поэтому здесь показано само изображение карточки для сохранения.',
       openExternal:'Открыть в Safari / Chrome',
+      browserTitle:'Рекомендуется открыть в Safari / Chrome',
+      browserText:'Для надежного отображения QR-кода и сохранения карточки участника откройте страницу во внешнем браузере.',
+      browserOpenIOS:'Открыть в Safari / Chrome',
+      browserOpenAndroid:'Открыть в Chrome',
+      browserHelpIOS:'Если браузер не открылся автоматически, нажмите ⋯ в приложении и выберите «Открыть в браузере» или «Открыть в Safari».',
+      browserHelpAndroid:'Если Chrome не открылся автоматически, нажмите ⋯ в приложении и выберите «Открыть во внешнем браузере».',
       close:'Закрыть',
       shareUnavailable:'Это устройство или браузер не поддерживает отправку файлов.',
       saveFailed:'Не удалось сохранить изображение. Попробуйте еще раз.',
@@ -335,15 +410,58 @@
   const isFacebookInApp=/FBAN|FBAV|FB_IAB|\[FB/i.test(ua);
   const isInstagramInApp=/Instagram/i.test(ua);
   const isSocialInApp=isLineInApp||isFacebookInApp||isInstagramInApp;
+  const isIOS=/iPhone|iPad|iPod/i.test(ua) || (navigator.platform==='MacIntel' && navigator.maxTouchPoints>1);
+  const isAndroid=/Android/i.test(ua);
+
+  function cleanCurrentUrl(){
+    const u=new URL(location.href);
+    u.searchParams.delete('openExternalBrowser');
+    return u.toString();
+  }
 
   function externalBrowserUrl(){
-    try{
-      const u=new URL(location.href);
-      u.searchParams.set('openExternalBrowser','1');
-      return u.toString();
-    }catch{
-      return location.href+(location.href.includes('?')?'&':'?')+'openExternalBrowser=1';
+    const u=new URL(cleanCurrentUrl());
+    u.searchParams.set('openExternalBrowser','1');
+    return u.toString();
+  }
+
+  function androidChromeIntentUrl(){
+    const u=new URL(cleanCurrentUrl());
+    const path=(u.pathname||'/')+(u.search||'')+(u.hash||'');
+    const fallback=encodeURIComponent(u.toString());
+    return `intent://${u.host}${path}#Intent;scheme=${u.protocol.replace(':','')};package=com.android.chrome;S.browser_fallback_url=${fallback};end`;
+  }
+
+  function openExternalBrowser(){
+    const help=$('#externalBrowserHelp');
+    if(help)help.classList.remove('show');
+
+    if(isLineInApp){
+      location.href=externalBrowserUrl();
+      return;
     }
+
+    if(isAndroid && (isFacebookInApp||isInstagramInApp)){
+      location.href=androidChromeIntentUrl();
+      setTimeout(()=>{
+        if(document.visibilityState==='visible' && help){
+          help.textContent=t[lang].browserHelpAndroid;
+          help.classList.add('show');
+        }
+      },1200);
+      return;
+    }
+
+    if(isIOS && (isFacebookInApp||isInstagramInApp)){
+      if(help){
+        help.textContent=t[lang].browserHelpIOS;
+        help.classList.add('show');
+        help.scrollIntoView({behavior:'smooth',block:'nearest'});
+      }
+      return;
+    }
+
+    window.open(cleanCurrentUrl(),'_blank','noopener');
   }
 
   function closeSaveImageOverlay(){
@@ -365,9 +483,10 @@
     $('#closeSaveImage').textContent=t[lang].close;
     preview.src=dataUrl;
     if(external){
-      external.textContent=t[lang].openExternal;
-      if(isLineInApp){external.href=externalBrowserUrl();external.style.display='block';}
-      else external.style.display='none';
+      external.textContent=isAndroid?t[lang].browserOpenAndroid:t[lang].browserOpenIOS;
+      external.href='#';
+      external.style.display=isSocialInApp?'block':'none';
+      external.onclick=e=>{e.preventDefault();openExternalBrowser();};
     }
     overlay.classList.add('show');
     overlay.setAttribute('aria-hidden','false');
@@ -382,6 +501,19 @@
     $('#document').placeholder=t[lang].placeholder;
     $('#check').textContent=t[lang].check;
     $('#privacy').textContent=t[lang].privacy;
+
+    const browserNotice=$('#externalBrowserNotice');
+    if(browserNotice){
+      browserNotice.classList.toggle('show',isSocialInApp);
+      $('#externalBrowserTitle').textContent=t[lang].browserTitle;
+      $('#externalBrowserText').textContent=t[lang].browserText;
+      $('#externalBrowserBtn').textContent=isAndroid?t[lang].browserOpenAndroid:t[lang].browserOpenIOS;
+
+      const browserHelp=$('#externalBrowserHelp');
+      if(browserHelp?.classList.contains('show')){
+        browserHelp.textContent=isAndroid?t[lang].browserHelpAndroid:t[lang].browserHelpIOS;
+      }
+    }
 
     // ถ้าการ์ดผู้เข้าแข่งขันถูกแสดงอยู่แล้ว ให้เปลี่ยนภาษาทันที
     const saveBtn=$('#saveParticipantCard');
@@ -404,7 +536,8 @@
       $('#saveImageInstruction').textContent=t[lang].inAppSaveInstruction;
       $('#saveImageWarning').textContent=t[lang].inAppSaveWarning;
       $('#closeSaveImage').textContent=t[lang].close;
-      const external=$('#openExternalBrowser'); if(external)external.textContent=t[lang].openExternal;
+      const external=$('#openExternalBrowser');
+      if(external)external.textContent=isAndroid?t[lang].browserOpenAndroid:t[lang].browserOpenIOS;
     }
     if(isSocialInApp && saveHint)saveHint.textContent=t[lang].inAppSaveInstruction;
   }
@@ -790,6 +923,7 @@
 
   $('#closeSaveImage')?.addEventListener('click',closeSaveImageOverlay);
   $('#saveImageOverlay')?.addEventListener('click',e=>{if(e.target===e.currentTarget)closeSaveImageOverlay();});
+  $('#externalBrowserBtn')?.addEventListener('click',openExternalBrowser);
 
   $('#lang').addEventListener('change',e=>{
     lang=e.target.value;
