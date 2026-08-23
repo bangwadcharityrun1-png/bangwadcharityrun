@@ -173,6 +173,19 @@
       font-weight:950;
       cursor:pointer
     }
+    .browser-gate-copy{
+      display:none;
+      width:100%;
+      min-height:48px;
+      margin-top:8px;
+      border:1px solid #d8dde7;
+      border-radius:14px;
+      padding:12px 16px;
+      background:#fff;
+      color:#111827;
+      font-weight:900;
+      cursor:pointer
+    }
     .browser-gate-help{
       display:none;
       margin-top:12px;
@@ -229,6 +242,7 @@
     <h1 id="browserGateTitle">กรุณาเปิดด้วย Chrome หรือ Safari</h1>
     <p id="browserGateText">หน้านี้ใช้สำหรับแสดง QR Code และบันทึกบัตรผู้เข้าแข่งขัน เพื่อให้ทำงานได้สมบูรณ์ กรุณาเปิดด้วย Chrome หรือ Safari</p>
     <button class="browser-gate-btn" id="browserGateBtn" type="button">เปิดด้วย Chrome / Safari</button>
+    <button class="browser-gate-copy" id="browserGateCopyBtn" type="button">คัดลอกลิงก์</button>
     <div class="browser-gate-help" id="browserGateHelp"></div>
     <div class="browser-gate-app" id="browserGateApp"></div>
   </div>
@@ -319,7 +333,10 @@
       browserText:'หน้านี้ใช้สำหรับแสดง QR Code และบันทึกบัตรผู้เข้าแข่งขัน เพื่อให้ทำงานได้สมบูรณ์ กรุณาเปิดด้วย Chrome หรือ Safari',
       browserOpenIOS:'เปิดด้วย Chrome / Safari',
       browserOpenAndroid:'เปิดด้วย Chrome',
-      browserHelpIOS:'หากปุ่มไม่สามารถเปิดเบราว์เซอร์ภายนอกได้ ให้แตะเมนู ⋯ ของ LINE / Facebook / Instagram แล้วเลือก “เปิดในเบราว์เซอร์” หรือ “เปิดใน Safari”',
+      browserManualIOS:'วิธีเปิดใน Safari',
+      browserCopy:'คัดลอกลิงก์',
+      browserCopied:'คัดลอกลิงก์แล้ว เปิด Safari แล้ววางลิงก์นี้ได้เลย',
+      browserHelpIOS:'บน iPhone/iPad ให้แตะเมนู ⋯ ของ Facebook / Instagram แล้วเลือก “เปิดในเบราว์เซอร์” หรือ “เปิดใน Safari” หากไม่มีตัวเลือกนี้ ให้กด “คัดลอกลิงก์” แล้วเปิด Safari และวางลิงก์เอง',
       browserHelpAndroid:'หาก Chrome ไม่เปิดอัตโนมัติ ให้แตะเมนู ⋯ ของ LINE / Facebook / Instagram แล้วเลือก “เปิดในเบราว์เซอร์ภายนอก”',
       close:'ปิด',
       shareUnavailable:'อุปกรณ์หรือเบราว์เซอร์นี้ไม่รองรับการแชร์ไฟล์',
@@ -362,7 +379,10 @@
       browserText:'This page displays your QR Code and participant card. For reliable operation, please open it in Chrome or Safari.',
       browserOpenIOS:'Open in Chrome / Safari',
       browserOpenAndroid:'Open in Chrome',
-      browserHelpIOS:'If the button cannot open an external browser, tap the ⋯ menu in LINE / Facebook / Instagram and choose “Open in browser” or “Open in Safari”.',
+      browserManualIOS:'How to open in Safari',
+      browserCopy:'Copy link',
+      browserCopied:'Link copied. Open Safari and paste this link.',
+      browserHelpIOS:'On iPhone/iPad, tap the ⋯ menu in Facebook / Instagram and choose “Open in browser” or “Open in Safari”. If that option is unavailable, tap “Copy link”, open Safari, and paste the link.',
       browserHelpAndroid:'If Chrome does not open automatically, tap the ⋯ menu in LINE / Facebook / Instagram and choose “Open in external browser”.',
       close:'Close',
       shareUnavailable:'This device or browser does not support file sharing.',
@@ -405,7 +425,10 @@
       browserText:'此页面用于显示二维码并保存参赛卡。为确保功能正常，请使用 Chrome 或 Safari 打开。',
       browserOpenIOS:'使用 Chrome / Safari 打开',
       browserOpenAndroid:'使用 Chrome 打开',
-      browserHelpIOS:'如果按钮无法打开外部浏览器，请点击 LINE / Facebook / Instagram 的 ⋯ 菜单，然后选择“在浏览器中打开”或“在 Safari 中打开”。',
+      browserManualIOS:'如何在 Safari 中打开',
+      browserCopy:'复制链接',
+      browserCopied:'链接已复制。请打开 Safari 并粘贴此链接。',
+      browserHelpIOS:'在 iPhone/iPad 上，请点击 Facebook / Instagram 的 ⋯ 菜单，然后选择“在浏览器中打开”或“在 Safari 中打开”。如果没有该选项，请点击“复制链接”，再打开 Safari 并粘贴链接。',
       browserHelpAndroid:'如果 Chrome 没有自动打开，请点击 LINE / Facebook / Instagram 的 ⋯ 菜单，然后选择“在外部浏览器中打开”。',
       close:'关闭',
       shareUnavailable:'此设备或浏览器不支持文件分享。',
@@ -448,7 +471,10 @@
       browserText:'Эта страница показывает QR-код и карточку участника. Для надежной работы откройте ее в Chrome или Safari.',
       browserOpenIOS:'Открыть в Chrome / Safari',
       browserOpenAndroid:'Открыть в Chrome',
-      browserHelpIOS:'Если кнопка не открывает внешний браузер, нажмите ⋯ в LINE / Facebook / Instagram и выберите «Открыть в браузере» или «Открыть в Safari».',
+      browserManualIOS:'Как открыть в Safari',
+      browserCopy:'Копировать ссылку',
+      browserCopied:'Ссылка скопирована. Откройте Safari и вставьте её.',
+      browserHelpIOS:'На iPhone/iPad нажмите ⋯ в Facebook / Instagram и выберите «Открыть в браузере» или «Открыть в Safari». Если такого пункта нет, нажмите «Копировать ссылку», откройте Safari и вставьте ссылку.',
       browserHelpAndroid:'Если Chrome не открылся автоматически, нажмите ⋯ в LINE / Facebook / Instagram и выберите «Открыть во внешнем браузере».',
       close:'Закрыть',
       shareUnavailable:'Это устройство или браузер не поддерживает отправку файлов.',
@@ -504,17 +530,37 @@
     return `intent://${u.host}${path}#Intent;scheme=${u.protocol.replace(':','')};package=com.android.chrome;S.browser_fallback_url=${fallback};end`;
   }
 
-  function iosChromeUrl(){
-    const u=new URL(cleanCurrentUrl());
-    const scheme=u.protocol==='https:'?'googlechromes':'googlechrome';
-    return `${scheme}://${u.host}${u.pathname}${u.search}${u.hash}`;
-  }
-
   function showBrowserHelp(){
     const help=$('#browserGateHelp');
     if(!help)return;
     help.textContent=isAndroid?t[lang].browserHelpAndroid:t[lang].browserHelpIOS;
     help.classList.add('show');
+  }
+
+  async function copyStatusUrl(){
+    const url=cleanCurrentUrl();
+    try{
+      if(navigator.clipboard?.writeText){
+        await navigator.clipboard.writeText(url);
+      }else{
+        const ta=document.createElement('textarea');
+        ta.value=url;
+        ta.setAttribute('readonly','');
+        ta.style.position='fixed';
+        ta.style.opacity='0';
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        ta.remove();
+      }
+      const help=$('#browserGateHelp');
+      if(help){
+        help.textContent=t[lang].browserCopied;
+        help.classList.add('show');
+      }
+    }catch(e){
+      showBrowserHelp();
+    }
   }
 
   function openExternalBrowser(){
@@ -535,10 +581,9 @@
     }
 
     if(isIOS){
-      location.href=iosChromeUrl();
-      setTimeout(()=>{
-        if(document.visibilityState==='visible')showBrowserHelp();
-      },1400);
+      // Do not use googlechrome(s):// or other browser URL schemes here.
+      // Facebook/Instagram WebViews on iOS may turn them into a broken page.
+      showBrowserHelp();
       return;
     }
 
@@ -564,7 +609,10 @@
     $('#closeSaveImage').textContent=t[lang].close;
     preview.src=dataUrl;
     if(external){
-      external.textContent=isAndroid?t[lang].browserOpenAndroid:t[lang].browserOpenIOS;
+      const manualIOS=isIOS && !isLineInApp && !isSupportedBrowser;
+      external.textContent=isAndroid
+        ? t[lang].browserOpenAndroid
+        : (manualIOS?t[lang].browserManualIOS:t[lang].browserOpenIOS);
       external.href='#';
       external.style.display=!isSupportedBrowser?'block':'none';
       external.onclick=e=>{e.preventDefault();openExternalBrowser();};
@@ -590,7 +638,20 @@
       app.style.display=isSupportedBrowser?'block':'none';
       $('#browserGateTitle').textContent=t[lang].browserTitle;
       $('#browserGateText').textContent=t[lang].browserText;
-      $('#browserGateBtn').textContent=isAndroid?t[lang].browserOpenAndroid:t[lang].browserOpenIOS;
+
+      const gateBtn=$('#browserGateBtn');
+      const copyBtn=$('#browserGateCopyBtn');
+      const manualIOS=isIOS && !isLineInApp && !isSupportedBrowser;
+
+      if(gateBtn){
+        gateBtn.textContent=isAndroid
+          ? t[lang].browserOpenAndroid
+          : (manualIOS?t[lang].browserManualIOS:t[lang].browserOpenIOS);
+      }
+      if(copyBtn){
+        copyBtn.textContent=t[lang].browserCopy;
+        copyBtn.style.display=manualIOS?'block':'none';
+      }
 
       let source='';
       if(isLineInApp)source='LINE';
@@ -627,7 +688,12 @@
       $('#saveImageWarning').textContent=t[lang].inAppSaveWarning;
       $('#closeSaveImage').textContent=t[lang].close;
       const external=$('#openExternalBrowser');
-      if(external)external.textContent=isAndroid?t[lang].browserOpenAndroid:t[lang].browserOpenIOS;
+      if(external){
+        const manualIOS=isIOS && !isLineInApp && !isSupportedBrowser;
+        external.textContent=isAndroid
+          ? t[lang].browserOpenAndroid
+          : (manualIOS?t[lang].browserManualIOS:t[lang].browserOpenIOS);
+      }
     }
     if(isIOS && saveHint){
       const iosHints={
@@ -1049,6 +1115,7 @@
   $('#closeSaveImage')?.addEventListener('click',closeSaveImageOverlay);
   $('#saveImageOverlay')?.addEventListener('click',e=>{if(e.target===e.currentTarget)closeSaveImageOverlay();});
   $('#browserGateBtn')?.addEventListener('click',openExternalBrowser);
+  $('#browserGateCopyBtn')?.addEventListener('click',copyStatusUrl);
 
   $('#lang').addEventListener('change',e=>{
     lang=e.target.value;
