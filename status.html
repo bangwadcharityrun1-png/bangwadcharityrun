@@ -629,7 +629,17 @@
       const external=$('#openExternalBrowser');
       if(external)external.textContent=isAndroid?t[lang].browserOpenAndroid:t[lang].browserOpenIOS;
     }
-    if(!isSupportedBrowser && saveHint)saveHint.textContent=t[lang].inAppSaveInstruction;
+    if(isIOS && saveHint){
+      const iosHints={
+        th:'บน iPhone/iPad กด “บันทึกลงเครื่อง” แล้วเลือก “บันทึกรูปภาพ” จาก Share Sheet',
+        en:'On iPhone/iPad, tap “Save to device”, then choose “Save Image” in the Share Sheet.',
+        zh:'在 iPhone/iPad 上，点击“保存到设备”，然后在共享菜单中选择“存储图像”。',
+        ru:'На iPhone/iPad нажмите «Сохранить на устройство», затем выберите «Сохранить изображение» в меню Поделиться.'
+      };
+      saveHint.textContent=iosHints[lang]||iosHints.th;
+    }else if(!isSupportedBrowser && saveHint){
+      saveHint.textContent=t[lang].inAppSaveInstruction;
+    }
   }
 
   function statusText(status){
@@ -705,7 +715,7 @@
     }
   }
 
-  async function participantCardPng(bib){
+  function participantCardPng(bib){
     const r=currentRegistration;
     if(!r || !validQrMatrix(r.bib_qr_matrix))throw new Error('QR matrix unavailable');
 
@@ -793,15 +803,19 @@
     ctx.fillText(t[lang].brand,540,1455);
 
     const dataUrl=canvas.toDataURL('image/png',1);
-    const blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/png',1));
-    if(!blob)throw new Error('PNG creation failed');
-
     const safeBib=String(bib).replace(/[^A-Za-z0-9_-]/g,'_');
+
+    const base64=dataUrl.split(',')[1]||'';
+    const binary=atob(base64);
+    const bytes=new Uint8Array(binary.length);
+    for(let i=0;i<binary.length;i++)bytes[i]=binary.charCodeAt(i);
+    const file=new File([bytes],`${safeBib}.png`,{type:'image/png'});
+
     return {
-      blob,
+      blob:file,
       dataUrl,
       safeBib,
-      file:new File([blob],`${safeBib}.png`,{type:'image/png'})
+      file
     };
   }
 
@@ -814,11 +828,32 @@
     btn.textContent=t[lang].saving;
 
     try{
-      const {blob,dataUrl,safeBib}=await participantCardPng(bib);
+      const {blob,dataUrl,safeBib,file}=participantCardPng(bib);
+
+      // iPhone/iPad: a.download with generated Blob is unreliable.
+      // Use the native iOS share sheet while the button click still has user activation.
+      if(isIOS){
+        if(navigator.share && navigator.canShare && navigator.canShare({files:[file]})){
+          try{
+            await navigator.share({
+              files:[file],
+              title:`TOP100 ${bib}`
+            });
+            return;
+          }catch(err){
+            if(err?.name==='AbortError')return;
+            console.warn('iOS file share failed, using image fallback:',err);
+          }
+        }
+        showSaveImageOverlay(dataUrl);
+        return;
+      }
+
       if(!isSupportedBrowser){
         showSaveImageOverlay(dataUrl);
         return;
       }
+
       const url=URL.createObjectURL(blob);
       const a=document.createElement('a');
       a.href=url;
@@ -827,7 +862,7 @@
       document.body.appendChild(a);
       a.click();
       a.remove();
-      setTimeout(()=>URL.revokeObjectURL(url),2000);
+      setTimeout(()=>URL.revokeObjectURL(url),5000);
     }catch(e){
       console.error(e);
       alert(t[lang].saveFailed);
@@ -846,7 +881,7 @@
     btn.textContent=t[lang].sharing;
 
     try{
-      const {file}=await participantCardPng(bib);
+      const {file}=participantCardPng(bib);
 
       if(!(navigator.share && navigator.canShare && navigator.canShare({files:[file]}))){
         alert(t[lang].shareUnavailable);
