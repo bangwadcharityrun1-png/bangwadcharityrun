@@ -200,6 +200,18 @@
     }
     .browser-gate-help.show{display:block}
     .browser-gate-app{margin-top:10px;color:#94a3b8;font-size:.76rem}
+    .ios-social-note{
+      display:none;
+      margin:0 0 14px;
+      padding:11px 13px;
+      border-radius:13px;
+      background:#eff6ff;
+      border:1px solid #bfdbfe;
+      color:#1d4ed8;
+      font-size:.8rem;
+      line-height:1.55
+    }
+    .ios-social-note.show{display:block}
 
     @media(max-width:560px){
       .container{padding-left:10px;padding-right:10px}
@@ -249,6 +261,9 @@
 </section>
 
 <main class="container" id="statusApp" style="display:none">
+  <div class="ios-social-note" id="iosSocialNote">
+    เปิดจาก Facebook/Instagram บน iPhone/iPad: หน้านี้ใช้งานได้โดยตรง ไม่จำเป็นต้องเปิด Safari ก่อน
+  </div>
   <section class="panel">
     <div class="panel-head">
       <div>
@@ -336,6 +351,7 @@
       browserManualIOS:'วิธีเปิดใน Safari',
       browserCopy:'คัดลอกลิงก์',
       browserCopied:'คัดลอกลิงก์แล้ว เปิด Safari แล้ววางลิงก์นี้ได้เลย',
+      iosSocialNote:'เปิดจาก Facebook/Instagram บน iPhone/iPad: หน้านี้ใช้งานได้โดยตรง ไม่จำเป็นต้องเปิด Safari ก่อน',
       browserHelpIOS:'บน iPhone/iPad ให้แตะเมนู ⋯ ของ Facebook / Instagram แล้วเลือก “เปิดในเบราว์เซอร์” หรือ “เปิดใน Safari” หากไม่มีตัวเลือกนี้ ให้กด “คัดลอกลิงก์” แล้วเปิด Safari และวางลิงก์เอง',
       browserHelpAndroid:'หาก Chrome ไม่เปิดอัตโนมัติ ให้แตะเมนู ⋯ ของ LINE / Facebook / Instagram แล้วเลือก “เปิดในเบราว์เซอร์ภายนอก”',
       close:'ปิด',
@@ -382,6 +398,7 @@
       browserManualIOS:'How to open in Safari',
       browserCopy:'Copy link',
       browserCopied:'Link copied. Open Safari and paste this link.',
+      iosSocialNote:'Opened from Facebook/Instagram on iPhone/iPad: this page works directly here; Safari is not required first.',
       browserHelpIOS:'On iPhone/iPad, tap the ⋯ menu in Facebook / Instagram and choose “Open in browser” or “Open in Safari”. If that option is unavailable, tap “Copy link”, open Safari, and paste the link.',
       browserHelpAndroid:'If Chrome does not open automatically, tap the ⋯ menu in LINE / Facebook / Instagram and choose “Open in external browser”.',
       close:'Close',
@@ -428,6 +445,7 @@
       browserManualIOS:'如何在 Safari 中打开',
       browserCopy:'复制链接',
       browserCopied:'链接已复制。请打开 Safari 并粘贴此链接。',
+      iosSocialNote:'在 iPhone/iPad 的 Facebook/Instagram 中打开：此页面可直接使用，无需先打开 Safari。',
       browserHelpIOS:'在 iPhone/iPad 上，请点击 Facebook / Instagram 的 ⋯ 菜单，然后选择“在浏览器中打开”或“在 Safari 中打开”。如果没有该选项，请点击“复制链接”，再打开 Safari 并粘贴链接。',
       browserHelpAndroid:'如果 Chrome 没有自动打开，请点击 LINE / Facebook / Instagram 的 ⋯ 菜单，然后选择“在外部浏览器中打开”。',
       close:'关闭',
@@ -474,6 +492,7 @@
       browserManualIOS:'Как открыть в Safari',
       browserCopy:'Копировать ссылку',
       browserCopied:'Ссылка скопирована. Откройте Safari и вставьте её.',
+      iosSocialNote:'Открыто из Facebook/Instagram на iPhone/iPad: страница работает прямо здесь; Safari сначала открывать не нужно.',
       browserHelpIOS:'На iPhone/iPad нажмите ⋯ в Facebook / Instagram и выберите «Открыть в браузере» или «Открыть в Safari». Если такого пункта нет, нажмите «Копировать ссылку», откройте Safari и вставьте ссылку.',
       browserHelpAndroid:'Если Chrome не открылся автоматически, нажмите ⋯ в LINE / Facebook / Instagram и выберите «Открыть во внешнем браузере».',
       close:'Закрыть',
@@ -510,6 +529,8 @@
     && !/FxiOS|EdgiOS|OPR|Opera|SamsungBrowser/i.test(ua);
 
   const isSupportedBrowser=isChromeBrowser||isSafariBrowser;
+  const isIOSFacebookLike=isIOS&&(isFacebookInApp||isInstagramInApp);
+  const canUseStatusPage=isSupportedBrowser||isIOSFacebookLike;
 
   function cleanCurrentUrl(){
     const u=new URL(location.href);
@@ -609,12 +630,12 @@
     $('#closeSaveImage').textContent=t[lang].close;
     preview.src=dataUrl;
     if(external){
-      const manualIOS=isIOS && !isLineInApp && !isSupportedBrowser;
+      const manualIOS=isIOS && !isLineInApp && !canUseStatusPage;
       external.textContent=isAndroid
         ? t[lang].browserOpenAndroid
         : (manualIOS?t[lang].browserManualIOS:t[lang].browserOpenIOS);
       external.href='#';
-      external.style.display=!isSupportedBrowser?'block':'none';
+      external.style.display=!canUseStatusPage?'block':'none';
       external.onclick=e=>{e.preventDefault();openExternalBrowser();};
     }
     overlay.classList.add('show');
@@ -633,15 +654,20 @@
 
     const gate=$('#browserGate');
     const app=$('#statusApp');
+    const iosSocialNote=$('#iosSocialNote');
+    if(iosSocialNote){
+      iosSocialNote.classList.toggle('show',isIOSFacebookLike);
+      iosSocialNote.textContent=t[lang].iosSocialNote;
+    }
     if(gate&&app){
-      gate.style.display=isSupportedBrowser?'none':'block';
-      app.style.display=isSupportedBrowser?'block':'none';
+      gate.style.display=canUseStatusPage?'none':'block';
+      app.style.display=canUseStatusPage?'block':'none';
       $('#browserGateTitle').textContent=t[lang].browserTitle;
       $('#browserGateText').textContent=t[lang].browserText;
 
       const gateBtn=$('#browserGateBtn');
       const copyBtn=$('#browserGateCopyBtn');
-      const manualIOS=isIOS && !isLineInApp && !isSupportedBrowser;
+      const manualIOS=isIOS && !isLineInApp && !canUseStatusPage;
 
       if(gateBtn){
         gateBtn.textContent=isAndroid
@@ -657,7 +683,7 @@
       if(isLineInApp)source='LINE';
       else if(isFacebookInApp)source='Facebook';
       else if(isInstagramInApp)source='Instagram';
-      else if(!isSupportedBrowser)source='Browser';
+      else if(!canUseStatusPage)source='Browser';
       $('#browserGateApp').textContent=source?`Detected: ${source}`:'';
 
       const browserHelp=$('#browserGateHelp');
@@ -689,7 +715,7 @@
       $('#closeSaveImage').textContent=t[lang].close;
       const external=$('#openExternalBrowser');
       if(external){
-        const manualIOS=isIOS && !isLineInApp && !isSupportedBrowser;
+        const manualIOS=isIOS && !isLineInApp && !canUseStatusPage;
         external.textContent=isAndroid
           ? t[lang].browserOpenAndroid
           : (manualIOS?t[lang].browserManualIOS:t[lang].browserOpenIOS);
@@ -703,7 +729,7 @@
         ru:'На iPhone/iPad нажмите «Сохранить на устройство», затем выберите «Сохранить изображение» в меню Поделиться.'
       };
       saveHint.textContent=iosHints[lang]||iosHints.th;
-    }else if(!isSupportedBrowser && saveHint){
+    }else if(!canUseStatusPage && saveHint){
       saveHint.textContent=t[lang].inAppSaveInstruction;
     }
   }
@@ -1033,7 +1059,7 @@
       <button class="share-card-btn" id="shareParticipantCard" type="button">
         ${esc(t[lang].share)}
       </button>
-      <div class="save-hint">${esc(!isSupportedBrowser?t[lang].inAppSaveInstruction:t[lang].saveHint)}</div>
+      <div class="save-hint">${esc(!canUseStatusPage?t[lang].inAppSaveInstruction:t[lang].saveHint)}</div>
     `;
   }
 
