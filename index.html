@@ -2,6 +2,32 @@
 <header class="topbar"><div class="inner"><div class="brand"><img id="siteLogo" alt="TOP100 Logo" style="display:none;width:42px;height:42px;object-fit:contain;border-radius:10px"><span id="brandText">TOP100 CHARITY RUN</span></div><div class="nav-actions"><a href="status.html" data-i18n="status">ตรวจสอบสถานะ</a><select class="lang-select" data-lang-select><option value="th">🇹🇭 ไทย</option><option value="en">🇬🇧 English</option><option value="zh">🇨🇳 中文</option><option value="ru">🇷🇺 Русский</option></select></div></div></header>
 <main class="container"><div id="message"></div><section class="hero" id="hero"><div><div class="status-open" id="statusBadge" data-i18n="open">เปิดรับสมัคร</div><h1 id="heroTitle">TOP100<br>CHARITY RUN</h1><p id="heroText"></p><div id="eventDateBox" style="display:none;align-items:center;gap:8px;width:max-content;max-width:100%;margin:14px 0 18px;padding:10px 14px;border:1px solid rgba(255,255,255,.22);border-radius:12px;background:rgba(255,255,255,.10);color:#fff"><span id="eventDateLabel" style="opacity:.78;font-size:.88rem">วันที่จัดงาน</span><strong id="eventDateText" style="font-size:1rem"></strong></div><div style="display:flex;gap:10px;flex-wrap:wrap"><button class="btn btn-light" id="applyTop" data-i18n="apply">สมัคร</button><a class="btn btn-light" href="status.html" data-i18n="status">ตรวจสอบสถานะ</a></div></div><div class="hero-metrics"><div class="metric"><strong id="feeMetric">200 ฿</strong><span data-i18n="fee">ค่าสมัคร</span></div><div class="metric"><strong>∞</strong><span data-i18n="unlimited">ไม่จำกัดจำนวน</span></div><div class="metric"><strong>MEN</strong><span>TOP100MEN</span></div><div class="metric"><strong>WOMEN</strong><span>TOP100WOMEN</span></div></div></section>
 <div class="section-title"><div><h2 data-i18n="choose">เลือกประเภทการแข่งขัน</h2><p id="categoryHelp"></p></div><strong id="feeTag"></strong></div><section class="grid2" id="categories"></section>
+
+<section class="card" style="margin-top:22px;padding:22px">
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+    <div style="width:42px;height:42px;border-radius:12px;background:#f3e8ff;color:#6d28d9;display:grid;place-items:center;font-size:1.25rem">🏁</div>
+    <div>
+      <h2 id="rulesTitle" style="margin:0;font-size:1.25rem">กติกาการแข่งขัน</h2>
+      <div id="rulesSubtitle" class="muted" style="margin-top:3px">กรุณาอ่านรายละเอียดก่อนสมัครเข้าร่วมการแข่งขัน</div>
+    </div>
+  </div>
+
+  <div style="display:grid;gap:12px">
+    <div style="padding:15px;border:1px solid #e8eaf1;border-radius:14px;background:#fafafa">
+      <strong id="rulesPrizeTitle" style="display:block;margin-bottom:5px">🏅 สิทธิ์รับเสื้อที่ระลึก</strong>
+      <div id="rulesPrizeText" class="muted" style="line-height:1.7">ผู้เข้าเส้นชัย 100 อันดับแรกของประเภทชาย และ 100 อันดับแรกของประเภทหญิง จะได้รับเสื้อที่ระลึกจากงาน</div>
+    </div>
+    <div style="padding:15px;border:1px solid #e8eaf1;border-radius:14px;background:#fafafa">
+      <strong id="rulesShirtTitle" style="display:block;margin-bottom:5px">👕 การเลือกไซซ์เสื้อ</strong>
+      <div id="rulesShirtText" class="muted" style="line-height:1.7">เสื้อที่ระลึกผลิตแบบคละไซซ์ และจำนวนในแต่ละไซซ์มีจำกัด ผู้ที่เข้าเส้นชัยก่อนจะมีสิทธิ์เลือกไซซ์เสื้อก่อน จนกว่าไซซ์นั้นจะหมด</div>
+    </div>
+    <div style="padding:15px;border:1px solid #e8eaf1;border-radius:14px;background:#fafafa">
+      <strong id="rulesDistanceTitle" style="display:block;margin-bottom:5px">📍 ระยะทางการแข่งขัน</strong>
+      <div id="rulesDistanceText" class="muted" style="line-height:1.7">เส้นทางวิ่งรอบเขื่อนบางวาด ระยะทางประมาณ 6.3 กิโลเมตรต่อรอบ ผู้เข้าแข่งขันต้องวิ่งทั้งหมด 4 รอบ รวมระยะทางประมาณ 25.20 กิโลเมตร</div>
+    </div>
+  </div>
+</section>
+
 <div class="card sticky-cta"><div><strong id="ctaTitle"></strong><div class="muted" id="ctaText"></div></div><button class="btn btn-primary" id="applyBottom" data-i18n="apply">สมัคร</button></div></main>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="config.js"></script><script src="js/app.js"></script><script src="js/i18n.js"></script><script>
 let eventData,cats=[]; const msg=document.querySelector('#message');
@@ -10,6 +36,48 @@ const EVENT_DATE_I18N={
   en:{label:'Event date',locale:'en-GB'},
   zh:{label:'比赛日期',locale:'zh-CN'},
   ru:{label:'Дата мероприятия',locale:'ru-RU'}
+};
+const RULES_I18N={
+  th:{
+    title:'กติกาการแข่งขัน',
+    subtitle:'กรุณาอ่านรายละเอียดก่อนสมัครเข้าร่วมการแข่งขัน',
+    prizeTitle:'🏅 สิทธิ์รับเสื้อที่ระลึก',
+    prizeText:'ผู้เข้าเส้นชัย 100 อันดับแรกของประเภทชาย และ 100 อันดับแรกของประเภทหญิง จะได้รับเสื้อที่ระลึกจากงาน',
+    shirtTitle:'👕 การเลือกไซซ์เสื้อ',
+    shirtText:'เสื้อที่ระลึกผลิตแบบคละไซซ์ และจำนวนในแต่ละไซซ์มีจำกัด ผู้ที่เข้าเส้นชัยก่อนจะมีสิทธิ์เลือกไซซ์เสื้อก่อน จนกว่าไซซ์นั้นจะหมด',
+    distanceTitle:'📍 ระยะทางการแข่งขัน',
+    distanceText:'เส้นทางวิ่งรอบเขื่อนบางวาด ระยะทางประมาณ 6.3 กิโลเมตรต่อรอบ ผู้เข้าแข่งขันต้องวิ่งทั้งหมด 4 รอบ รวมระยะทางประมาณ 25.20 กิโลเมตร'
+  },
+  en:{
+    title:'Race Rules',
+    subtitle:'Please read the details before registering.',
+    prizeTitle:'🏅 Finisher Shirt Eligibility',
+    prizeText:'The first 100 male finishers and the first 100 female finishers will receive an event souvenir shirt.',
+    shirtTitle:'👕 Shirt Size Selection',
+    shirtText:'Souvenir shirts are produced in mixed sizes and quantities of each size are limited. Earlier finishers will have priority to choose their shirt size while stocks last.',
+    distanceTitle:'📍 Race Distance',
+    distanceText:'The course is around Bang Wad Reservoir, approximately 6.3 km per lap. Participants must complete 4 laps, for a total distance of approximately 25.20 km.'
+  },
+  zh:{
+    title:'比赛规则',
+    subtitle:'报名参赛前请仔细阅读以下说明。',
+    prizeTitle:'🏅 纪念衫资格',
+    prizeText:'男子组前100名完赛者及女子组前100名完赛者将获得赛事纪念衫。',
+    shirtTitle:'👕 纪念衫尺码选择',
+    shirtText:'纪念衫为混合尺码生产，各尺码数量有限。较早完赛的参赛者可优先选择尺码，先到先选，送完即止。',
+    distanceTitle:'📍 比赛距离',
+    distanceText:'赛道位于 Bang Wad 水库周边，每圈约6.3公里。参赛者须完成4圈，总距离约25.20公里。'
+  },
+  ru:{
+    title:'Правила соревнования',
+    subtitle:'Пожалуйста, ознакомьтесь с правилами перед регистрацией.',
+    prizeTitle:'🏅 Право на памятную футболку',
+    prizeText:'Первые 100 мужчин и первые 100 женщин, финишировавших в своей категории, получат памятную футболку мероприятия.',
+    shirtTitle:'👕 Выбор размера футболки',
+    shirtText:'Футболки изготовлены в разных размерах, количество каждого размера ограничено. Участники, финишировавшие раньше, выбирают размер первыми, пока он есть в наличии.',
+    distanceTitle:'📍 Дистанция',
+    distanceText:'Маршрут проходит вокруг водохранилища Bang Wad: примерно 6,3 км за круг. Необходимо пройти 4 круга, общая дистанция — около 25,20 км.'
+  }
 };
 function formatEventDate(value,lang){
   if(!value)return '';
@@ -20,5 +88,5 @@ function formatEventDate(value,lang){
   try{return new Intl.DateTimeFormat(cfg.locale,{day:'numeric',month:'long',year:'numeric'}).format(d)}
   catch(e){return String(value)}
 }
-function renderLang(){if(!eventData)return;const l=I18N.lang;document.querySelector('#heroTitle').textContent=APP.pick(eventData.hero_title_i18n,l)||eventData.event_name;document.querySelector('#heroText').textContent=APP.pick(eventData.hero_subtitle_i18n,l);const dateBox=document.querySelector('#eventDateBox');const dateLabel=document.querySelector('#eventDateLabel');const dateText=document.querySelector('#eventDateText');if(eventData.event_date){const dateCfg=EVENT_DATE_I18N[l]||EVENT_DATE_I18N.th;dateLabel.textContent=dateCfg.label;dateText.textContent=formatEventDate(eventData.event_date,l);dateBox.style.display='inline-flex'}else{dateBox.style.display='none'}document.querySelector('#categoryHelp').textContent=APP.pick(eventData.category_intro_i18n,l);document.querySelector('#ctaTitle').textContent=APP.pick(eventData.cta_title_i18n,l);document.querySelector('#ctaText').textContent=APP.pick(eventData.cta_text_i18n,l);document.querySelector('#feeMetric').textContent=`${Number(eventData.registration_fee)} ฿`;document.querySelector('#feeTag').textContent=`${I18N.t('fee')} ${Number(eventData.registration_fee)} ${I18N.t('baht')}`;document.querySelector('#brandText').textContent=eventData.event_name||'TOP100 CHARITY RUN';const logo=document.querySelector('#siteLogo');if(eventData.logo_url){logo.src=eventData.logo_url;logo.style.display='block'}else{logo.removeAttribute('src');logo.style.display='none'}const hero=document.querySelector('#hero');if(eventData.banner_url){hero.style.backgroundImage=`linear-gradient(90deg,rgba(15,23,42,.92),rgba(49,18,85,.72)),url("${String(eventData.banner_url).replaceAll('"','%22')}")`;hero.style.backgroundSize='cover';hero.style.backgroundPosition='center'}else{hero.style.backgroundImage=''}document.querySelector('#categories').innerHTML=cats.map(c=>`<article class="card category-card"><div class="category-copy"><small>${APP.esc(c.code)}</small><h3>${APP.esc(APP.pick(c.name_i18n,l)||c.code)}</h3><p>${APP.esc(APP.pick(c.description_i18n,l))}</p></div><div class="category-img">${c.shirt_image_url?`<img src="${APP.esc(c.shirt_image_url)}" alt="${APP.esc(c.code)}">`:`<div class="shirt-placeholder">100</div>`}</div></article>`).join('');}
+function renderLang(){if(!eventData)return;const l=I18N.lang;const rules=RULES_I18N[l]||RULES_I18N.th;document.querySelector('#rulesTitle').textContent=rules.title;document.querySelector('#rulesSubtitle').textContent=rules.subtitle;document.querySelector('#rulesPrizeTitle').textContent=rules.prizeTitle;document.querySelector('#rulesPrizeText').textContent=rules.prizeText;document.querySelector('#rulesShirtTitle').textContent=rules.shirtTitle;document.querySelector('#rulesShirtText').textContent=rules.shirtText;document.querySelector('#rulesDistanceTitle').textContent=rules.distanceTitle;document.querySelector('#rulesDistanceText').textContent=rules.distanceText;document.querySelector('#heroTitle').textContent=APP.pick(eventData.hero_title_i18n,l)||eventData.event_name;document.querySelector('#heroText').textContent=APP.pick(eventData.hero_subtitle_i18n,l);const dateBox=document.querySelector('#eventDateBox');const dateLabel=document.querySelector('#eventDateLabel');const dateText=document.querySelector('#eventDateText');if(eventData.event_date){const dateCfg=EVENT_DATE_I18N[l]||EVENT_DATE_I18N.th;dateLabel.textContent=dateCfg.label;dateText.textContent=formatEventDate(eventData.event_date,l);dateBox.style.display='inline-flex'}else{dateBox.style.display='none'}document.querySelector('#categoryHelp').textContent=APP.pick(eventData.category_intro_i18n,l);document.querySelector('#ctaTitle').textContent=APP.pick(eventData.cta_title_i18n,l);document.querySelector('#ctaText').textContent=APP.pick(eventData.cta_text_i18n,l);document.querySelector('#feeMetric').textContent=`${Number(eventData.registration_fee)} ฿`;document.querySelector('#feeTag').textContent=`${I18N.t('fee')} ${Number(eventData.registration_fee)} ${I18N.t('baht')}`;document.querySelector('#brandText').textContent=eventData.event_name||'TOP100 CHARITY RUN';const logo=document.querySelector('#siteLogo');if(eventData.logo_url){logo.src=eventData.logo_url;logo.style.display='block'}else{logo.removeAttribute('src');logo.style.display='none'}const hero=document.querySelector('#hero');if(eventData.banner_url){hero.style.backgroundImage=`linear-gradient(90deg,rgba(15,23,42,.92),rgba(49,18,85,.72)),url("${String(eventData.banner_url).replaceAll('"','%22')}")`;hero.style.backgroundSize='cover';hero.style.backgroundPosition='center'}else{hero.style.backgroundImage=''}document.querySelector('#categories').innerHTML=cats.map(c=>`<article class="card category-card"><div class="category-copy"><small>${APP.esc(c.code)}</small><h3>${APP.esc(APP.pick(c.name_i18n,l)||c.code)}</h3><p>${APP.esc(APP.pick(c.description_i18n,l))}</p></div><div class="category-img">${c.shirt_image_url?`<img src="${APP.esc(c.shirt_image_url)}" alt="${APP.esc(c.code)}">`:`<div class="shirt-placeholder">100</div>`}</div></article>`).join('');}
 async function init(){try{eventData=await APP.getEvent();cats=await APP.getCategories(eventData.id);if(eventData.status!=='open'){document.querySelector('#statusBadge').textContent=I18N.t('closed');document.querySelectorAll('#applyTop,#applyBottom').forEach(b=>b.disabled=true)}renderLang()}catch(e){msg.innerHTML=`<div class="error">${APP.esc(e.message)}</div>`}}window.addEventListener('languagechange',renderLang);document.querySelectorAll('#applyTop,#applyBottom').forEach(b=>b.onclick=()=>location.href='payment.html');init();</script></body></html>
