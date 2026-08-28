@@ -14,9 +14,16 @@ async function sha256Hex(file){
   const hash=await crypto.subtle.digest('SHA-256',buf);
   return [...new Uint8Array(hash)].map(b=>b.toString(16).padStart(2,'0')).join('');
 }
-function validSlipFile(file){
-  const ext=(file.name.split('.').pop()||'').toLowerCase();
-  return ['image/jpeg','image/png'].includes(file.type)&&['jpg','jpeg','png'].includes(ext);
+async function validSlipFile(file){
+  try{
+    const head=new Uint8Array(await file.slice(0,8).arrayBuffer());
+    const isJpeg=head.length>=3&&head[0]===0xFF&&head[1]===0xD8&&head[2]===0xFF;
+    const isPng=head.length>=8&&head[0]===0x89&&head[1]===0x50&&head[2]===0x4E&&head[3]===0x47&&head[4]===0x0D&&head[5]===0x0A&&head[6]===0x1A&&head[7]===0x0A;
+    return isJpeg||isPng;
+  }catch(e){
+    console.error('Cannot inspect slip file signature',e);
+    return false;
+  }
 }
 async function scanSlipQrInBrowser(file){
   if(typeof jsQR!=='function')throw new Error('ไม่สามารถโหลดตัวอ่าน QR ได้ กรุณารีเฟรชหน้าเว็บ');
@@ -95,50 +102,160 @@ function localSlipText(key,vars={}){
   return s;
 }
 
-async function makeOcrCanvas(file){
+function makeOcrVariant(source,mode='contrast'){
+  const out=document.createElement('canvas');
+  out.width=source.width;
+  out.height=source.height;
+  const ctx=out.getContext('2d',{willReadFrequently:true});
+  if(!ctx)throw new Error('Cannot enhance image');
+
+  ctx.drawImage(source,0,0);
+  if(mode==='original')return out;
+
+  const img=ctx.getImageData(0,0,out.width,out.height);
+  const d=img.data;
+
+  for(let i=0;i<d.length;i+=4){
+    const gray=Math.round(0.299*d[i]+0.587*d[i+1]+0.114*d[i+2]);
+
+    let value=gray;
+    if(mode==='contrast'){
+      // ดึงตัวเลขสีน้ำเงิน/เทาให้เข้ม และล้างพื้นหลังให้ขาว
+      value=gray<215 ? Math.max(0,Math.round((gray-215)*1.8+215)) : 255;
+    }else if(mode==='threshold'){
+      value=gray<190?0:255;
+    }else if(mode==='gray'){
+      value=gray;
+    }
+
+    d[i]=d[i+1]=d[i+2]=value;
+    d[i+3]=255;
+  }
+
+  ctx.putImageData(img,0,0);
+  return out;
+}
+
+function cropCanvas(source,xRatio,yRatio,wRatio,hRatio,scale=2){
+  const sx=Math.max(0,Math.round(source.width*xRatio));
+  const sy=Math.max(0,Math.round(source.height*yRatio));
+  const sw=Math.max(1,Math.min(source.width-sx,Math.round(source.width*wRatio)));
+  const sh=Math.max(1,Math.min(source.height-sy,Math.round(source.height*hRatio)));
+
+  const out=document.createElement('canvas');
+  out.width=Math.max(1,sw*scale);
+  out.height=Math.max(1,sh*scale);
+  const ctx=out.getContext('2d',{willReadFrequently:true});
+  if(!ctx)throw new Error('Cannot crop image');
+
+  ctx.imageSmoothingEnabled=true;
+  ctx.imageSmoothingQuality='high';
+  ctx.drawImage(source,sx,sy,sw,sh,0,0,out.width,out.height);
+  return out;
+}
+
+async function makeOcrSources(file){
   const bitmap=await createImageBitmap(file);
   try{
-    const maxSide=1800;
+    const maxSide=1900;
     const scale=Math.min(1,maxSide/Math.max(bitmap.width,bitmap.height));
     const w=Math.max(1,Math.round(bitmap.width*scale));
     const h=Math.max(1,Math.round(bitmap.height*scale));
-    const canvas=document.createElement('canvas');
-    canvas.width=w;
-    canvas.height=h;
-    const ctx=canvas.getContext('2d',{willReadFrequently:true});
+
+    const full=document.createElement('canvas');
+    full.width=w;
+    full.height=h;
+    const ctx=full.getContext('2d',{willReadFrequently:true});
     if(!ctx)throw new Error('Cannot read image');
     ctx.drawImage(bitmap,0,0,w,h);
-    return canvas;
+
+    // ใช้หลายโซนแบบทับซ้อนกัน เพราะแต่ละธนาคารวางยอดเงินคนละตำแหน่ง
+    const upper=cropCanvas(full,.04,.10,.92,.34,2);
+    const upperMid=cropCanvas(full,.04,.20,.92,.38,2);
+    const middle=cropCanvas(full,.04,.30,.92,.38,2);
+    const wide=cropCanvas(full,.02,.08,.96,.62,1.6);
+
+    return [
+      {name:'upper_contrast',focused:true,canvas:makeOcrVariant(upper,'contrast')},
+      {name:'uppermid_contrast',focused:true,canvas:makeOcrVariant(upperMid,'contrast')},
+      {name:'middle_contrast',focused:true,canvas:makeOcrVariant(middle,'contrast')},
+      {name:'wide_threshold',focused:true,canvas:makeOcrVariant(wide,'threshold')},
+      {name:'wide_gray',focused:true,canvas:makeOcrVariant(wide,'gray')},
+      {name:'full_contrast',focused:false,canvas:makeOcrVariant(full,'contrast')},
+      {name:'full_original',focused:false,canvas:makeOcrVariant(full,'original')}
+    ];
   }finally{
     bitmap.close?.();
   }
 }
 
-function extractMoneyCandidates(text){
-  const clean=String(text||'')
+function normalizeOcrText(text){
+  return String(text||'')
     .replace(/[Oo]/g,'0')
-    .replace(/,/g,'')
-    .replace(/\s+/g,' ');
-  const out=[];
-  const rx=/(?:^|[^\d])(\d{1,6}(?:\.\d{1,2})?)(?=$|[^\d])/g;
+    .replace(/[Il|]/g,'1')
+    .replace(/[，]/g,',')
+    .replace(/[。]/g,'.')
+    .replace(/\s+/g,' ')
+    .trim();
+}
+
+function amountEvidence(text,expected,{focused=false}={}){
+  const clean=normalizeOcrText(text);
+  const expectedNumber=Number(expected);
+  const evidences=[];
+
+  // รับทั้ง 200.00 และ 200,00
+  const rx=/(?:^|[^\d])(\d{1,7})(?:[.,](\d{1,2}))?(?=$|[^\d])/g;
   for(const m of clean.matchAll(rx)){
-    const raw=m[1];
-    const n=Number(raw);
-    if(!Number.isFinite(n)||n<1||n>1000000)continue;
-    out.push({raw,value:n,hasDecimal:raw.includes('.')});
+    const integer=m[1];
+    const decimals=m[2];
+    const raw=decimals===undefined?integer:`${integer}.${decimals.padEnd(2,'0')}`;
+    const value=Number(raw);
+    if(!Number.isFinite(value)||value<0||value>1000000)continue;
+
+    if(Math.abs(value-expectedNumber)<0.009){
+      evidences.push({
+        type:decimals!==undefined?'strong_decimal':'weak_integer',
+        raw:m[0].trim(),
+        value:expectedNumber
+      });
+    }
+
+    // OCR บางครั้งทำจุดทศนิยมของ 200.00 หายเป็น 20000
+    // อนุญาตเป็น "หลักฐานอ่อน" เฉพาะโซนที่เน้นยอดเงิน และต้องมีซ้ำจากอีก pass ก่อนจึงจะผ่าน
+    if(focused && decimals===undefined && /^\d{3,8}$/.test(integer)){
+      const cents=Number(integer)/100;
+      if(Math.abs(cents-expectedNumber)<0.009){
+        evidences.push({
+          type:'weak_missing_decimal',
+          raw:m[0].trim(),
+          value:expectedNumber
+        });
+      }
+    }
+  }
+
+  return evidences;
+}
+
+function collectMoneyCandidates(text){
+  const clean=normalizeOcrText(text).replace(/,/g,'.');
+  const out=[];
+  const rx=/(?:^|[^\d])(\d{1,7}(?:\.\d{1,2})?)(?=$|[^\d])/g;
+  for(const m of clean.matchAll(rx)){
+    const n=Number(m[1]);
+    if(Number.isFinite(n)&&n>=1&&n<=1000000)out.push(n);
   }
   return out;
 }
 
 function chooseLikelyWrongAmount(candidates,expected){
-  const moneyLike=candidates
-    .filter(x=>x.hasDecimal || x.value<=100000)
-    .filter(x=>Math.abs(x.value-expected)>0.009);
-  moneyLike.sort((a,b)=>{
-    if(a.hasDecimal!==b.hasDecimal)return a.hasDecimal?-1:1;
-    return Math.abs(a.value-expected)-Math.abs(b.value-expected);
-  });
-  return moneyLike[0]?.value ?? null;
+  const unique=[...new Set(candidates.map(Number).filter(Number.isFinite))];
+  const plausible=unique
+    .filter(v=>v>=1&&v<=100000)
+    .filter(v=>Math.abs(v-Number(expected))>0.009)
+    .sort((a,b)=>Math.abs(a-Number(expected))-Math.abs(b-Number(expected)));
+  return plausible[0]??null;
 }
 
 async function readExpectedAmountFromSlip(file,expected){
@@ -146,31 +263,58 @@ async function readExpectedAmountFromSlip(file,expected){
     throw new Error(localSlipText('ocrUnavailable'));
   }
 
-  const canvas=await makeOcrCanvas(file);
+  const sources=await makeOcrSources(file);
   let worker;
+  const weakSources=new Set();
+  const allCandidates=[];
+
   try{
-    // ตัวเลขบนสลิปใช้ภาษาเดียวกัน จึงใช้ eng เพื่อลดขนาดข้อมูล OCR
     worker=await Tesseract.createWorker('eng');
     await worker.setParameters({
       tessedit_char_whitelist:'0123456789., ',
-      preserve_interword_spaces:'1'
+      preserve_interword_spaces:'1',
+      tessedit_pageseg_mode:'11'
     });
-    const result=await worker.recognize(canvas);
-    const candidates=extractMoneyCandidates(result?.data?.text||'');
-    const match=candidates.find(x=>Math.abs(x.value-Number(expected))<0.009);
 
-    if(match){
-      return {
-        matched:true,
-        detectedAmount:Number(expected),
-        candidates:candidates.map(x=>x.value).slice(0,30)
-      };
+    for(const source of sources){
+      const result=await worker.recognize(source.canvas);
+      const text=result?.data?.text||'';
+      allCandidates.push(...collectMoneyCandidates(text));
+
+      const evidence=amountEvidence(text,Number(expected),{focused:source.focused});
+
+      // หลักฐานเข้ม: OCR เห็นยอดแบบมีทศนิยมตรง เช่น 200.00 / 200,00
+      if(evidence.some(x=>x.type==='strong_decimal')){
+        return {
+          matched:true,
+          detectedAmount:Number(expected),
+          candidates:[...new Set(allCandidates)].slice(0,50),
+          source:source.name,
+          confidence:'strong'
+        };
+      }
+
+      // หลักฐานอ่อน เช่น 200 หรือ 20000 ต้องพบจากอย่างน้อย 2 pass
+      if(evidence.some(x=>x.type==='weak_integer'||x.type==='weak_missing_decimal')){
+        weakSources.add(source.name);
+        if(weakSources.size>=2){
+          return {
+            matched:true,
+            detectedAmount:Number(expected),
+            candidates:[...new Set(allCandidates)].slice(0,50),
+            source:[...weakSources].join('+'),
+            confidence:'confirmed_multi_pass'
+          };
+        }
+      }
     }
 
     return {
       matched:false,
-      detectedAmount:chooseLikelyWrongAmount(candidates,Number(expected)),
-      candidates:candidates.map(x=>x.value).slice(0,30)
+      detectedAmount:chooseLikelyWrongAmount(allCandidates,Number(expected)),
+      candidates:[...new Set(allCandidates)].slice(0,60),
+      source:'not_verified',
+      confidence:'none'
     };
   }finally{
     if(worker)await worker.terminate();
@@ -189,9 +333,9 @@ el('#verify').onclick=async()=>{
     return;
   }
 
-  if(!validSlipFile(file)){
+  if(!(await validSlipFile(file))){
     el('#slip').value='';
-    el('#slipStatus').innerHTML='<div class="error">รองรับเฉพาะ JPG / JPEG / PNG เท่านั้น</div>';
+    el('#slipStatus').innerHTML='<div class="error">ไฟล์ไม่ใช่ภาพ JPG / JPEG / PNG ที่ถูกต้อง</div>';
     return;
   }
 
@@ -232,10 +376,7 @@ el('#verify').onclick=async()=>{
     const amountResult=await readExpectedAmountFromSlip(file,expectedAmount);
 
     if(!amountResult.matched){
-      const found=amountResult.detectedAmount;
-      const message=found!==null
-        ? localSlipText('ocrMismatch',{found:Number(found).toFixed(2),expected:expectedAmount.toFixed(2)})
-        : localSlipText('ocrMismatchUnknown',{expected:expectedAmount.toFixed(2)});
+      const message=localSlipText('ocrMismatchUnknown',{expected:expectedAmount.toFixed(2)});
       Swal.close();
       el('#slipStatus').innerHTML=`<div class="error">${APP.esc(message)}</div>`;
       return;
