@@ -28,6 +28,30 @@
   </div>
 </section>
 
+<section class="card" style="margin-top:22px;padding:22px">
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+    <div style="width:42px;height:42px;border-radius:12px;background:#ede9fe;color:#6d28d9;display:grid;place-items:center;font-size:1.25rem">🗓️</div>
+    <div>
+      <h2 id="scheduleTitle" style="margin:0;font-size:1.25rem">กำหนดการสำคัญ</h2>
+      <div id="scheduleSubtitle" class="muted" style="margin-top:3px">วันรับ BIB และวันเริ่มการแข่งขัน</div>
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px">
+    <div style="padding:16px;border:1px solid #e8eaf1;border-radius:14px;background:#fafafa">
+      <strong id="bibScheduleTitle" style="display:block;margin-bottom:8px;font-size:1rem">🎽 รับ BIB / หมายเลขวิ่ง</strong>
+      <div id="bibScheduleDate" style="font-weight:800;margin-bottom:4px">วันเสาร์ที่ 19 ธันวาคม 2569</div>
+      <div id="bibScheduleTime" class="muted">เวลา 15.00–19.30 น.</div>
+    </div>
+
+    <div style="padding:16px;border:1px solid #e8eaf1;border-radius:14px;background:#fafafa">
+      <strong id="raceScheduleTitle" style="display:block;margin-bottom:8px;font-size:1rem">🏃 เริ่มการแข่งขัน</strong>
+      <div id="raceScheduleDate" style="font-weight:800;margin-bottom:4px">วันอาทิตย์ที่ 20 ธันวาคม 2569</div>
+      <div id="raceScheduleTime" class="muted">เวลา 06.00 น.</div>
+    </div>
+  </div>
+</section>
+
 <div class="card sticky-cta"><div><strong id="ctaTitle"></strong><div class="muted" id="ctaText"></div></div><button class="btn btn-primary" id="applyBottom" data-i18n="apply">สมัคร</button></div></main>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="config.js"></script><script src="js/app.js"></script><script src="js/i18n.js"></script><script>
 let eventData,cats=[]; const msg=document.querySelector('#message');
@@ -37,6 +61,49 @@ const EVENT_DATE_I18N={
   zh:{label:'比赛日期',locale:'zh-CN'},
   ru:{label:'Дата мероприятия',locale:'ru-RU'}
 };
+const SCHEDULE_I18N={
+  th:{
+    title:'กำหนดการสำคัญ',
+    subtitle:'วันรับ BIB และวันเริ่มการแข่งขัน',
+    bibTitle:'🎽 รับ BIB / หมายเลขวิ่ง',
+    bibDate:'วันเสาร์ที่ 19 ธันวาคม 2569',
+    bibTime:'เวลา 15.00–19.30 น.',
+    raceTitle:'🏃 เริ่มการแข่งขัน',
+    raceDate:'วันอาทิตย์ที่ 20 ธันวาคม 2569',
+    raceTime:'เวลา 06.00 น.'
+  },
+  en:{
+    title:'Important Schedule',
+    subtitle:'BIB collection and race start',
+    bibTitle:'🎽 BIB / Race Number Collection',
+    bibDate:'Saturday, 19 December 2026',
+    bibTime:'3:00 PM–7:30 PM',
+    raceTitle:'🏃 Race Start',
+    raceDate:'Sunday, 20 December 2026',
+    raceTime:'6:00 AM'
+  },
+  zh:{
+    title:'重要日程',
+    subtitle:'领取号码布及比赛开始时间',
+    bibTitle:'🎽 领取号码布 / 参赛号码',
+    bibDate:'2026年12月19日 星期六',
+    bibTime:'15:00–19:30',
+    raceTitle:'🏃 比赛开始',
+    raceDate:'2026年12月20日 星期日',
+    raceTime:'06:00'
+  },
+  ru:{
+    title:'Важное расписание',
+    subtitle:'Получение BIB и старт соревнования',
+    bibTitle:'🎽 Получение BIB / стартового номера',
+    bibDate:'Суббота, 19 декабря 2026 г.',
+    bibTime:'15:00–19:30',
+    raceTitle:'🏃 Старт соревнования',
+    raceDate:'Воскресенье, 20 декабря 2026 г.',
+    raceTime:'06:00'
+  }
+};
+
 const RULES_I18N={
   th:{
     title:'กติกาการแข่งขัน',
@@ -88,5 +155,5 @@ function formatEventDate(value,lang){
   try{return new Intl.DateTimeFormat(cfg.locale,{day:'numeric',month:'long',year:'numeric'}).format(d)}
   catch(e){return String(value)}
 }
-function renderLang(){if(!eventData)return;const l=I18N.lang;const rules=RULES_I18N[l]||RULES_I18N.th;document.querySelector('#rulesTitle').textContent=rules.title;document.querySelector('#rulesSubtitle').textContent=rules.subtitle;document.querySelector('#rulesPrizeTitle').textContent=rules.prizeTitle;document.querySelector('#rulesPrizeText').textContent=rules.prizeText;document.querySelector('#rulesShirtTitle').textContent=rules.shirtTitle;document.querySelector('#rulesShirtText').textContent=rules.shirtText;document.querySelector('#rulesDistanceTitle').textContent=rules.distanceTitle;document.querySelector('#rulesDistanceText').textContent=rules.distanceText;document.querySelector('#heroTitle').textContent=APP.pick(eventData.hero_title_i18n,l)||eventData.event_name;document.querySelector('#heroText').textContent=APP.pick(eventData.hero_subtitle_i18n,l);const dateBox=document.querySelector('#eventDateBox');const dateLabel=document.querySelector('#eventDateLabel');const dateText=document.querySelector('#eventDateText');if(eventData.event_date){const dateCfg=EVENT_DATE_I18N[l]||EVENT_DATE_I18N.th;dateLabel.textContent=dateCfg.label;dateText.textContent=formatEventDate(eventData.event_date,l);dateBox.style.display='inline-flex'}else{dateBox.style.display='none'}document.querySelector('#categoryHelp').textContent=APP.pick(eventData.category_intro_i18n,l);document.querySelector('#ctaTitle').textContent=APP.pick(eventData.cta_title_i18n,l);document.querySelector('#ctaText').textContent=APP.pick(eventData.cta_text_i18n,l);document.querySelector('#feeMetric').textContent=`${Number(eventData.registration_fee)} ฿`;document.querySelector('#feeTag').textContent=`${I18N.t('fee')} ${Number(eventData.registration_fee)} ${I18N.t('baht')}`;document.querySelector('#brandText').textContent=eventData.event_name||'TOP100 CHARITY RUN';const logo=document.querySelector('#siteLogo');if(eventData.logo_url){logo.src=eventData.logo_url;logo.style.display='block'}else{logo.removeAttribute('src');logo.style.display='none'}const hero=document.querySelector('#hero');if(eventData.banner_url){hero.style.backgroundImage=`linear-gradient(90deg,rgba(15,23,42,.92),rgba(49,18,85,.72)),url("${String(eventData.banner_url).replaceAll('"','%22')}")`;hero.style.backgroundSize='cover';hero.style.backgroundPosition='center'}else{hero.style.backgroundImage=''}document.querySelector('#categories').innerHTML=cats.map(c=>`<article class="card category-card"><div class="category-copy"><small>${APP.esc(c.code)}</small><h3>${APP.esc(APP.pick(c.name_i18n,l)||c.code)}</h3><p>${APP.esc(APP.pick(c.description_i18n,l))}</p></div><div class="category-img">${c.shirt_image_url?`<img src="${APP.esc(c.shirt_image_url)}" alt="${APP.esc(c.code)}">`:`<div class="shirt-placeholder">100</div>`}</div></article>`).join('');}
+function renderLang(){if(!eventData)return;const l=I18N.lang;const rules=RULES_I18N[l]||RULES_I18N.th;const schedule=SCHEDULE_I18N[l]||SCHEDULE_I18N.th;document.querySelector('#scheduleTitle').textContent=schedule.title;document.querySelector('#scheduleSubtitle').textContent=schedule.subtitle;document.querySelector('#bibScheduleTitle').textContent=schedule.bibTitle;document.querySelector('#bibScheduleDate').textContent=schedule.bibDate;document.querySelector('#bibScheduleTime').textContent=schedule.bibTime;document.querySelector('#raceScheduleTitle').textContent=schedule.raceTitle;document.querySelector('#raceScheduleDate').textContent=schedule.raceDate;document.querySelector('#raceScheduleTime').textContent=schedule.raceTime;document.querySelector('#rulesTitle').textContent=rules.title;document.querySelector('#rulesSubtitle').textContent=rules.subtitle;document.querySelector('#rulesPrizeTitle').textContent=rules.prizeTitle;document.querySelector('#rulesPrizeText').textContent=rules.prizeText;document.querySelector('#rulesShirtTitle').textContent=rules.shirtTitle;document.querySelector('#rulesShirtText').textContent=rules.shirtText;document.querySelector('#rulesDistanceTitle').textContent=rules.distanceTitle;document.querySelector('#rulesDistanceText').textContent=rules.distanceText;document.querySelector('#heroTitle').textContent=APP.pick(eventData.hero_title_i18n,l)||eventData.event_name;document.querySelector('#heroText').textContent=APP.pick(eventData.hero_subtitle_i18n,l);const dateBox=document.querySelector('#eventDateBox');const dateLabel=document.querySelector('#eventDateLabel');const dateText=document.querySelector('#eventDateText');if(eventData.event_date){const dateCfg=EVENT_DATE_I18N[l]||EVENT_DATE_I18N.th;dateLabel.textContent=dateCfg.label;dateText.textContent=formatEventDate(eventData.event_date,l);dateBox.style.display='inline-flex'}else{dateBox.style.display='none'}document.querySelector('#categoryHelp').textContent=APP.pick(eventData.category_intro_i18n,l);document.querySelector('#ctaTitle').textContent=APP.pick(eventData.cta_title_i18n,l);document.querySelector('#ctaText').textContent=APP.pick(eventData.cta_text_i18n,l);document.querySelector('#feeMetric').textContent=`${Number(eventData.registration_fee)} ฿`;document.querySelector('#feeTag').textContent=`${I18N.t('fee')} ${Number(eventData.registration_fee)} ${I18N.t('baht')}`;document.querySelector('#brandText').textContent=eventData.event_name||'TOP100 CHARITY RUN';const logo=document.querySelector('#siteLogo');if(eventData.logo_url){logo.src=eventData.logo_url;logo.style.display='block'}else{logo.removeAttribute('src');logo.style.display='none'}const hero=document.querySelector('#hero');if(eventData.banner_url){hero.style.backgroundImage=`linear-gradient(90deg,rgba(15,23,42,.92),rgba(49,18,85,.72)),url("${String(eventData.banner_url).replaceAll('"','%22')}")`;hero.style.backgroundSize='cover';hero.style.backgroundPosition='center'}else{hero.style.backgroundImage=''}document.querySelector('#categories').innerHTML=cats.map(c=>`<article class="card category-card"><div class="category-copy"><small>${APP.esc(c.code)}</small><h3>${APP.esc(APP.pick(c.name_i18n,l)||c.code)}</h3><p>${APP.esc(APP.pick(c.description_i18n,l))}</p></div><div class="category-img">${c.shirt_image_url?`<img src="${APP.esc(c.shirt_image_url)}" alt="${APP.esc(c.code)}">`:`<div class="shirt-placeholder">100</div>`}</div></article>`).join('');}
 async function init(){try{eventData=await APP.getEvent();cats=await APP.getCategories(eventData.id);if(eventData.status!=='open'){document.querySelector('#statusBadge').textContent=I18N.t('closed');document.querySelectorAll('#applyTop,#applyBottom').forEach(b=>b.disabled=true)}renderLang()}catch(e){msg.innerHTML=`<div class="error">${APP.esc(e.message)}</div>`}}window.addEventListener('languagechange',renderLang);document.querySelectorAll('#applyTop,#applyBottom').forEach(b=>b.onclick=()=>location.href='payment.html');init();</script></body></html>
